@@ -43,19 +43,19 @@ class ADMM_SSA(Server2):
             # train = self.get_electricity_data(house_id)
 
             train = torch.Tensor(train)
-            # print(train)
-            if(i == 0):
-                U, S, V = torch.svd(train)
-                U = U[:, :dim]
-                # self.commonPCAz = V
-                # print("type of V", type(U))
-                print("shape of U: ", U.shape)
-                # print("Init U (svd): \n", U)
-                torch.manual_seed(10)
-                self.commonPCAz = torch.rand_like(U, dtype=torch.float)
-                # print("Init U (randomized): \n", self.commonPCAz)
+            
+            # Jiayu: init U = svd(X_i)
+            U, S, V = torch.svd(train)
+            U = U[:, :dim]
+            # self.commonPCAz = V
+            # print("type of V", type(U))
+            print("shape of U: ", U.shape)
+            # print("Init U (svd): \n", U)
+            self.commonPCAz = torch.rand_like(U, dtype=torch.float)
+            self.commonPCAz = U
+            # print("Init U (randomized): \n", self.commonPCAz)
 
-                check = torch.matmul(U,U.T)
+            # check = torch.matmul(U.T,U)
 
             user = UserADMM2(algorithm, device, id, train, self.commonPCAz, learning_rate, ro, local_epochs, dim)
             self.users.append(user)

@@ -29,8 +29,8 @@ def main(experiment, dataset, algorithm, batch_size, learning_rate, ro, num_glob
     data = "KDD"
     server = ADMM_SSA(algorithm, experiment, device, data, learning_rate, ro, num_glob_iters, local_epochs, numusers, dim, times, imputationORforecast=0)
     server.train()
-    server_forecast = ADMM_SSA(algorithm, experiment, device, data, learning_rate, ro, num_glob_iters, local_epochs, numusers, dim, times, imputationORforecast=1)
-    server_forecast.train()
+    # server_forecast = ADMM_SSA(algorithm, experiment, device, data, learning_rate, ro, num_glob_iters, local_epochs, numusers, dim, times, imputationORforecast=1)
+    # server_forecast.train()
 
 if __name__ == "__main__":
     args = args_parser()

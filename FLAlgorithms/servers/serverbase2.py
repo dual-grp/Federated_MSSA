@@ -63,7 +63,7 @@ class Server2:
         num_samples = []
         losses = []
         for c in self.selected_users:
-            cl, ns = c.train_error_and_loss() 
+            cl, ns = c.train_error_and_loss()
             num_samples.append(ns)
             losses.append(cl*1.0)
         
@@ -74,7 +74,8 @@ class Server2:
     def evaluate(self):
         stats_train = self.train_error_and_loss()
         # print(f"stats_train: {stats_train}")
-        train_loss = sum(stats_train[2])/len(self.users)
+        # train_loss = sum(stats_train[2])/len(self.users)
+        train_loss = torch.sqrt(sum(cl*ns for ns, cl in list(zip(stats_train[1], stats_train[2])))) # Jiayu: replace train_loss by reconstruction error
         self.rs_train_loss.append(train_loss)
         if(self.experiment):
             self.experiment.log_metric("train_loss",train_loss)

@@ -23,9 +23,9 @@ class ADMM_SSA(Server2):
         self.dim = dim
         self.experiment = experiment
         total_users = len(dataset[0][0])
-        print("total users: ", total_users)
         np.random.seed(1993)
-        total_users = 20
+        total_users = 2
+        print("total users: ", total_users)
         self.num_users = total_users
         self.imputationORforecast = imputationORforecast
 
@@ -33,12 +33,14 @@ class ADMM_SSA(Server2):
         self.house_ids = ['MT_{0:03}'.format(i+1) for i in range(20)]
 
         for i in range(total_users):            
-            id = i
             # train = self.generate_synthetic_data()
             # store_id = self.store_ids[i]
             # train = self.get_store_sale_data(store_id)
-            house_id = self.house_ids[i]
-            train = self.get_electricity_data(house_id)
+            
+            id = i
+            train = self.generate_synthetic_data_gaussian(id)
+            # house_id = self.house_ids[i]
+            # train = self.get_electricity_data(house_id)
 
             train = torch.Tensor(train)
             # print(train)
@@ -46,10 +48,13 @@ class ADMM_SSA(Server2):
                 U, S, V = torch.svd(train)
                 U = U[:, :dim]
                 # self.commonPCAz = V
-                print("type of V", type(U))
-                print("shape of V: ", U.shape)
+                # print("type of V", type(U))
+                print("shape of U: ", U.shape)
+                # print("Init U (svd): \n", U)
+                torch.manual_seed(10)
                 self.commonPCAz = torch.rand_like(U, dtype=torch.float)
-                print(self.commonPCAz)
+                # print("Init U (randomized): \n", self.commonPCAz)
+
                 check = torch.matmul(U,U.T)
 
             user = UserADMM2(algorithm, device, id, train, self.commonPCAz, learning_rate, ro, local_epochs, dim)
@@ -74,6 +79,15 @@ class ADMM_SSA(Server2):
         sX = StandardScaler(copy=True)
         C = sX.fit_transform(X)
         return C
+
+    def generate_synthetic_data_gaussian(self, id):
+        np.random.seed(id)
+        a = np.random.normal(size=(1000,3))
+        X = torch.Tensor(a.T)
+        # Xt = X.T
+        print("seed id:", id)
+        print("Gaussian synthetic data first 3 obs\n", X[:3,:3])
+        return X
 
     def get_store_sale_data(self, store_id):
         DATA_PATH = "data/"
@@ -135,8 +149,8 @@ class ADMM_SSA(Server2):
     def train(self):
         self.selected_users = self.select_users(1000,1)
         print("Selected users: ")
-        for user in self.selected_users:
-            print("user_id: ", user.id)
+        for i, user in enumerate(self.selected_users):
+            print("user_id selected for training: ", i)
         for glob_iter in range(self.num_glob_iters):
             if(self.experiment):
                 self.experiment.set_epoch( glob_iter + 1)
@@ -162,6 +176,7 @@ class ADMM_SSA(Server2):
         result_filename = f"Grassmann_ADMM_Electricity_{self.num_users}_L20_d{self.dim}_{suffix}"
         result_path = os.path.join(results_folder_path, result_filename)
         np.save(result_path, self.Z)
+        print("Trained U: \n", self.Z[:3,:3])
         print("Completed training!!!")
         # self.save_results()
         # self.save_model()

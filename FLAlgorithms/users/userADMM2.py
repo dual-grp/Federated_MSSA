@@ -15,7 +15,7 @@ class UserADMM2():
         self.ro = ro
         self.device = device
         self.id = id
-        self.train_samples = len(train_data)
+        self.train_samples = train_data.shape[1] # input size (m,n)
         self.learning_rate = learning_rate
         self.local_epochs = local_epochs
         self.dim = dim

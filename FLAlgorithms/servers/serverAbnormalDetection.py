@@ -32,7 +32,7 @@ class AbnormalDetection(Server2):
         for i in range(self.num_clients):            
             id = i
             train = self.get_client_data(dataX, factor=factor, i=i)
-            train = torch.Tensor(train)
+            train = torch.Tensor(train, dtype=torch.float64)
             if(i == 0):
                 U, S, V = torch.svd(train)
                 V = V[:, :dim]

@@ -42,7 +42,7 @@ class ADMM_SSA(Server2):
             # house_id = self.house_ids[i]
             # train = self.get_electricity_data(house_id)
 
-            train = torch.Tensor(train)
+            train = torch.Tensor(train, dtype=torch.float64)
             
             # Jiayu: init U = svd(X_i)
             U, S, V = torch.svd(train)
@@ -51,7 +51,7 @@ class ADMM_SSA(Server2):
             # print("type of V", type(U))
             print("shape of U: ", U.shape)
             # print("Init U (svd): \n", U)
-            self.commonPCAz = torch.rand_like(U, dtype=torch.float)
+            self.commonPCAz = torch.rand_like(U, dtype=torch.float64)
             self.commonPCAz = U
             # print("Init U (randomized): \n", self.commonPCAz)
 

@@ -12,7 +12,7 @@ def args_parser():
     parser.add_argument("--dataset", type=str, default="Mnist", choices=["EMNIST","human_activity", "gleam","vehicle_sensor","Mnist", "Synthetic", "Cifar10"])
     parser.add_argument("--batch_size", type=int, default=0)
     parser.add_argument("--learning_rate", type=float, default = 0.01, help="Local learning rate")
-    parser.add_argument("--ro", type=float, default=0.01, help="Regularization term")
+    parser.add_argument("--ro", type=float, default=1, help="Regularization term")
     parser.add_argument("--num_global_iters", type=int, default=10)
     parser.add_argument("--local_epochs", type=int, default = 30)
     parser.add_argument("--dim", type=int, default = 3)

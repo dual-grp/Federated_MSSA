@@ -66,6 +66,9 @@ class ADMM_SSA(Server2):
             user = UserADMM2(algorithm, device, id, train, self.commonPCAz, learning_rate, ro, local_epochs, dim)
             self.users.append(user)
             self.total_train_samples += user.train_samples
+        
+        # Jiayu: add constraint - ZTZ = I
+        self.localG = torch.matmul(self.commonPCAz.T, self.commonPCAz)
 
         self.all_train_data = np.hstack(self.all_train_data)
         self.all_train_data = torch.tensor(self.all_train_data, dtype=torch.float64)
@@ -179,7 +182,11 @@ class ADMM_SSA(Server2):
             for user in self.selected_users:
                 user.train(self.local_epochs)
             # self.users[0].train(self.local_epochs)
-            self.aggregate_pca()    
+
+            # self.aggregate_pca()
+            # Jiayu: add constraint - ZTZ = I
+            self.update_global_pca() 
+
         loss_all_data = self.evaluate_all_data()
         self.Z = self.commonPCAz.detach().numpy().copy()
         directory = os.getcwd()

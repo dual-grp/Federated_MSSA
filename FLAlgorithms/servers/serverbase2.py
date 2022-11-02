@@ -23,7 +23,7 @@ class Server2:
 
     def send_pca(self):
         assert (self.users is not None and len(self.users) > 0)
-        # print("check Z", torch.matmul(self.commonPCAz.T,self.commonPCAz)[:3,:3])
+        print("check Z", torch.matmul(self.commonPCAz.T,self.commonPCAz).detach().numpy()[:3,:3])
         # for user in self.users:
         for user in self.selected_users:
             # print("user_id", user.id)
@@ -46,6 +46,30 @@ class Server2:
         self.commonPCAz = torch.zeros(self.commonPCAz.shape)
         for user in self.selected_users:
             self.add_pca(user, user.train_samples / total_train)
+
+    def update_global_pca(self):
+        # from User
+        self.commonPCAz.requires_grad_(True)
+        # Solve the global problem
+        if self.commonPCAz.grad is not None:
+            self.commonPCAz.grad.data.zero_()
+        ZTZ = torch.matmul(self.commonPCAz.T, self.commonPCAz) - torch.eye(self.commonPCAz.shape[1])
+        hZ = torch.max(torch.zeros(ZTZ.shape),ZTZ)**2
+        loss_UZ = torch.sum(torch.inner(self.localY, self.localPCA - self.commonPCAz)) + 0.5 * self.ro * torch.norm(self.localPCA - self.commonPCAz)** 2
+        loss_hZ = 0.5 * self.ro * torch.norm(hZ) ** 2 + torch.sum(torch.inner(self.localG, hZ))
+        self.loss = loss_UZ + loss_hZ
+        self.loss.backward(retain_graph=True)
+
+        temp = self.commonPCAz.data.clone()
+        # Solve the local problem
+        if self.commonPCAz.grad is not None:
+            self.commonPCAz.grad.data.zero_()
+
+        self.loss.backward(retain_graph=True)
+        # Update global pca
+        temp  = temp - self.learning_rate * self.commonPCAz.grad
+        self.commonPCAz = temp.data.clone()
+
     
     def select_users(self, round, fac_users):
         if(fac_users == 1):
@@ -83,6 +107,12 @@ class Server2:
         print("Average Global Trainning Loss: ",train_loss)
         return train_loss
     
+    def evaluate_all_data(self):
+        residual = torch.matmul((torch.eye(self.commonPCAz.shape[0]) - torch.matmul(self.commonPCAz, self.commonPCAz.T)), self.all_train_data.to(torch.float))
+        loss_train = torch.norm(residual, p="fro")
+        print(loss_train)
+        return loss_train
+
     def save_results(self):
         dir_path = "./results"
         if not os.path.exists(dir_path):

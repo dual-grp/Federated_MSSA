@@ -31,6 +31,8 @@ class UserADMM2():
         # self.localY = torch.zeros_like(self.localY)
         # update local T
         temp = torch.matmul(self.localPCA.T, self.localPCA) - torch.eye(self.localPCA.shape[1])
+        print("check U", self.id, temp.detach().numpy()[:3,:3])
+        # print("check U", self.id, self.localPCA.detach().numpy())
         hU = torch.max(torch.zeros(temp.shape),temp)**2
         self.localT = self.localT + self.ro * hU
 
@@ -49,8 +51,8 @@ class UserADMM2():
             if self.algorithm == "FedPE": 
                 self.localPCA.requires_grad_(True)
                 residual = torch.matmul(torch.eye(self.localPCA.shape[0])- torch.matmul(self.localPCA, self.localPCA.T), self.train_data)
-                temp = torch.matmul(self.localPCA.T, self.localPCA) - torch.eye(self.localPCA.shape[1])
-                hU = torch.max(torch.zeros(temp.shape),temp)**2
+                UTU = torch.matmul(self.localPCA.T, self.localPCA) - torch.eye(self.localPCA.shape[1])
+                hU = torch.max(torch.zeros(UTU.shape),temp)**2
                 regularization = 0.5 * self.ro * torch.norm(self.localPCA - self.localZ)** 2 + 0.5 * self.ro * torch.norm(hU) ** 2
                 frobenius_inner = torch.sum(torch.inner(self.localY, self.localPCA - self.localZ)) + torch.sum(torch.inner(self.localT, hU))
                 self.loss = 1/self.train_samples * torch.norm(residual, p="fro") ** 2 

@@ -1,1 +1,1 @@
-python3 main.py --algorithm FedPG --learning_rate 0.005 --num_global_iters 100 --dim 20 --local_epochs 100 --ro 0.1
+python3 main.py --algorithm FedPG --learning_rate 0.005 --num_global_iters 20 --dim 20 --local_epochs 30 --ro 100

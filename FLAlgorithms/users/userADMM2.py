@@ -31,7 +31,7 @@ class UserADMM2():
         # self.localY = torch.zeros_like(self.localY)
         # update local T
         temp = torch.matmul(self.localPCA.T, self.localPCA) - torch.eye(self.localPCA.shape[1])
-        print("check U", self.id, temp.detach().numpy()[:3,:3])
+        # print("check U", self.id, temp.detach().numpy()[:3,:3])
         # print("check U", self.id, self.localPCA.detach().numpy())
         hU = torch.max(torch.zeros(temp.shape),temp)**2
         self.localT = self.localT + self.ro * hU
@@ -52,7 +52,7 @@ class UserADMM2():
                 self.localPCA.requires_grad_(True)
                 residual = torch.matmul(torch.eye(self.localPCA.shape[0])- torch.matmul(self.localPCA, self.localPCA.T), self.train_data)
                 UTU = torch.matmul(self.localPCA.T, self.localPCA) - torch.eye(self.localPCA.shape[1])
-                hU = torch.max(torch.zeros(UTU.shape),temp)**2
+                hU = torch.max(torch.zeros(UTU.shape), UTU)**2
                 regularization = 0.5 * self.ro * torch.norm(self.localPCA - self.localZ)** 2 + 0.5 * self.ro * torch.norm(hU) ** 2
                 frobenius_inner = torch.sum(torch.inner(self.localY, self.localPCA - self.localZ)) + torch.sum(torch.inner(self.localT, hU))
                 self.loss = 1/self.train_samples * torch.norm(residual, p="fro") ** 2 
@@ -63,12 +63,15 @@ class UserADMM2():
                     self.localPCA.grad.data.zero_()
 
                 self.lossADMM.backward(retain_graph=True)
+                # print('check local loss', self.lossADMM)
                 # Update local pca
                 temp  = temp - self.learning_rate * self.localPCA.grad
                 self.localPCA = temp.data.clone()
                  
             else: 
                 '''Grassmannian manifold'''
+                # if i==0 and self.id == "MT_001":
+                #     print('check local loss', self.lossADMM)
                 self.localPCA.requires_grad_(True)
                 residual = torch.matmul(torch.eye(self.localPCA.shape[0])- torch.matmul(self.localPCA, self.localPCA.T), self.train_data)
                 frobenius_inner = torch.sum(torch.inner(self.localY, self.localPCA - self.localZ))
@@ -80,6 +83,8 @@ class UserADMM2():
                 if self.localPCA.grad is not None:
                     self.localPCA.grad.data.zero_()
                 self.lossADMM.backward(retain_graph=True)
+                # if i==0 and self.id == "MT_001":
+                #     print('check local loss', self.lossADMM)
                 '''Moving on Grassmannian manifold'''
                 # Projection on tangent space
                 projection_matrix = torch.eye(self.localPCA.shape[0]) - torch.matmul(self.localPCA, self.localPCA.T)

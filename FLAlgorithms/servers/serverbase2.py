@@ -6,7 +6,7 @@ from utils.model_utils import Metrics
 import copy
 
 class Server2:
-    def __init__(self, device, dataset, learning_rate, ro, num_glob_iters, local_epochs, num_users, dim, times):
+    def __init__(self, device, dataset, learning_rate, ro, num_glob_iters, local_epochs, num_users, dim, window, times):
         self.device = device
         self.dataset = dataset
         self.num_glob_iters = num_glob_iters
@@ -16,14 +16,16 @@ class Server2:
         self.users = []
         self.selected_users = []
         self.num_users = num_users
-        self.L_k = ro
+        self.ro = ro
         self.rs_train_acc, self.rs_train_loss, self.rs_glob_acc = [], [], []
         self.times = times
         self.dim = dim
+        self.window = window
 
     def send_pca(self):
         assert (self.users is not None and len(self.users) > 0)
-        print("check Z", torch.matmul(self.commonPCAz.T,self.commonPCAz).detach().numpy()[:3,:3])
+        # print("check Z", (torch.matmul(self.commonPCAz.T,self.commonPCAz)- torch.eye(self.commonPCAz.shape[1])).detach().numpy()[:3,:3] )
+        # print("print Z", self.commonPCAz.detach().numpy()[:3,:3])
         # for user in self.users:
         for user in self.selected_users:
             # print("user_id", user.id)
@@ -43,34 +45,73 @@ class Server2:
         for user in self.selected_users:
             total_train += user.train_samples
             # print("user_id", user.id)
-        self.commonPCAz = torch.zeros(self.commonPCAz.shape)
+        self.commonPCAz = torch.zeros(self.commonPCAz.shape, dtype=torch.float64)
         for user in self.selected_users:
             self.add_pca(user, user.train_samples / total_train)
 
     def update_global_pca(self):
-        # from User
-        self.commonPCAz.requires_grad_(True)
-        # Solve the global problem
-        if self.commonPCAz.grad is not None:
-            self.commonPCAz.grad.data.zero_()
-        ZTZ = torch.matmul(self.commonPCAz.T, self.commonPCAz) - torch.eye(self.commonPCAz.shape[1])
-        hZ = torch.max(torch.zeros(ZTZ.shape),ZTZ)**2
-        loss_UZ = torch.sum(torch.inner(self.localY, self.localPCA - self.commonPCAz)) + 0.5 * self.ro * torch.norm(self.localPCA - self.commonPCAz)** 2
-        loss_hZ = 0.5 * self.ro * torch.norm(hZ) ** 2 + torch.sum(torch.inner(self.localG, hZ))
-        self.loss = loss_UZ + loss_hZ
-        self.loss.backward(retain_graph=True)
+        if self.algorithm == "FedPE": 
+            '''Euclidean space'''
+            # for i in range(1):
+            for i in range(self.local_epochs):
+                self.loss_UZ = torch.zeros(1)
+                self.loss = torch.zeros(1)
+                self.commonPCAz.requires_grad_(True)
+                # if self.commonPCAz.grad is not None:
+                #     self.commonPCAz.grad.data.zero_()
 
-        temp = self.commonPCAz.data.clone()
-        # Solve the local problem
-        if self.commonPCAz.grad is not None:
-            self.commonPCAz.grad.data.zero_()
+                ZTZ = torch.matmul(self.commonPCAz.T, self.commonPCAz) - torch.eye(self.commonPCAz.shape[1])
+                hZ = torch.max(torch.zeros(ZTZ.shape),ZTZ)**2
+                self.loss_hZ = 0.5 * self.ro * torch.norm(hZ) ** 2 + torch.sum(torch.inner(self.localG, hZ))
 
-        self.loss.backward(retain_graph=True)
-        # Update global pca
-        temp  = temp - self.learning_rate * self.commonPCAz.grad
-        self.commonPCAz = temp.data.clone()
+                for user in self.users:
+                    self.loss_UZ = self.loss_UZ + torch.sum(torch.inner(user.localY, user.localPCA - self.commonPCAz)) + 0.5 * self.ro * torch.norm(user.localPCA - self.commonPCAz)** 2
 
-    
+                self.loss = self.loss_UZ + self.loss_hZ
+                self.loss = self.loss / self.total_train_samples
+                self.loss.backward(retain_graph=True)
+
+                temp = self.commonPCAz.data.clone()
+                # Solve the global problem
+                if self.commonPCAz.grad is not None:
+                    self.commonPCAz.grad.data.zero_()
+
+                self.loss.backward(retain_graph=True)
+                # if i == 0 or i == self.local_epochs:
+                    # print("check Z loss", self.loss)
+                # Update global pca
+                temp = temp - self.learning_rate * self.commonPCAz.grad
+                self.commonPCAz = temp.data.clone()
+            self.localG = self.localG + self.ro * hZ
+
+        else: 
+            # for i in range(1):
+            for i in range(self.local_epochs):
+                '''Grassmannian manifold'''
+                self.loss = torch.zeros(1)
+                self.commonPCAz.requires_grad_(True)
+                # if self.commonPCAz.grad is not None:
+                #     self.commonPCAz.grad.data.zero_()
+
+                for user in self.users:
+                    self.loss = self.loss + torch.sum(torch.inner(user.localY, user.localPCA - self.commonPCAz)) + 0.5 * self.ro * torch.norm(user.localPCA - self.commonPCAz)** 2
+                self.loss = self.loss / self.total_train_samples
+                temp = self.commonPCAz.data.clone()
+                # solve global problem
+                if self.commonPCAz.grad is not None:
+                    self.commonPCAz.grad.data.zero_()
+                self.loss.backward(retain_graph=True)
+                # if i == 0 or i == self.local_epochs:
+                #     print("check Z loss", self.loss)
+                '''Moving on Grassmannian manifold'''
+                # Projection on tangent space
+                projection_matrix = torch.eye(self.commonPCAz.shape[0]) - torch.matmul(self.commonPCAz, self.commonPCAz.T)
+                projection_gradient = torch.matmul(projection_matrix, self.commonPCAz.grad)
+                temp = temp - self.learning_rate * projection_gradient
+                # Exponential mapping to Grassmannian manifold by QR retraction
+                q, r = torch.linalg.qr(temp)
+                self.commonPCAz = q.data.clone()
+
     def select_users(self, round, fac_users):
         if(fac_users == 1):
             print("All users are selected")
@@ -108,16 +149,34 @@ class Server2:
         return train_loss
     
     def evaluate_all_data(self):
-        residual = torch.matmul((torch.eye(self.commonPCAz.shape[0]) - torch.matmul(self.commonPCAz, self.commonPCAz.T)), self.all_train_data.to(torch.float))
+        # print("check data", self.all_train_data.detach().numpy()[:3,1000:1003]) # verified, data no problems
+        # 
+        # result_path = os.path.join(os.path.join(os.getcwd(), "results/SSA"), 'commonPCAz')
+        # np.save(result_path, self.commonPCAz.detach().numpy())
+        residual = torch.matmul((torch.eye(self.commonPCAz.shape[0]) - torch.matmul(self.commonPCAz, self.commonPCAz.T)), self.all_train_data.to(torch.float64))
+        # residual verified, same as below
+        # residual2 = self.all_train_data.to(torch.float64) - torch.matmul(torch.matmul(self.commonPCAz,self.commonPCAz.T),self.all_train_data.to(torch.float64))
+        # loss_train verified, same as below
         loss_train = torch.norm(residual, p="fro")
-        print(loss_train)
+        # loss_train2 = self.re_error(self.commonPCAz.detach().numpy(), self.all_train_data.to(torch.float64))
+        print("check Z", (torch.matmul(self.commonPCAz.T,self.commonPCAz)- torch.eye(self.commonPCAz.shape[1])).detach().numpy()[:3,:3] )
+        print("print Z", self.commonPCAz.detach().numpy()[:3,:3])
+        print("evaluate all data", loss_train)
+        # print("evaluate all data2", loss_train2)
         return loss_train
+
+    def re_error(self, u, X):
+        Xhat = u.dot(u.T.dot(X))
+    #     print("Xhat.shape = ", Xhat.shape)
+        re_error = np.linalg.norm(X-Xhat)
+    #     return np.sqrt(((u.dot(u.T.dot(X)) - X)**2).sum())
+        return re_error
 
     def save_results(self):
         dir_path = "./results"
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
-        alg = self.dataset[1] + "ADMM" + "_" + str(self.learning_rate)  + "_" + str(self.L_k) + "_" + str(self.num_users) + "u" + "_" + str(self.batch_size) + "b" + "_" + str(self.local_epochs) 
+        alg = self.dataset[1] + "ADMM" + "_" + str(self.learning_rate)  + "_" + str(self.ro) + "_" + str(self.num_users) + "u" + "_" + str(self.batch_size) + "b" + "_" + str(self.local_epochs) 
         alg = alg + "_" + str(self.times)
         if (len(self.rs_glob_acc) != 0 &  len(self.rs_train_acc) & len(self.rs_train_loss)) :
             with h5py.File("./results/"+'{}.h5'.format(alg, self.local_epochs), 'w') as hf:

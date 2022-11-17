@@ -24,9 +24,13 @@ class ADMM_SSA(Server2):
         self.K = 0
         self.dim = dim
         self.experiment = experiment
-        total_users = len(dataset[0][0])
         np.random.seed(1993)
-        total_users = 20
+        if dataset == 'debug': self.debug = True
+        else: self.debug = False
+        if self.debug:
+            total_users = 3
+        else:
+            total_users = 20
         print("total users: ", total_users)
         self.num_users = total_users
         self.imputationORforecast = imputationORforecast
@@ -41,10 +45,12 @@ class ADMM_SSA(Server2):
             # store_id = self.store_ids[i]
             # train = self.get_store_sale_data(store_id)
             
-            # id = i
-            # train = self.generate_synthetic_data_gaussian(id)
-            id = self.house_ids[i]
-            train = self.get_electricity_data(id)
+            if self.debug:
+                id = i
+                train = self.generate_synthetic_data_gaussian(id)
+            else:
+                id = self.house_ids[i]
+                train = self.get_electricity_data(id)
 
             self.all_train_data.append(train)
 

@@ -16,23 +16,28 @@ import h5py
 # Implementation for FedAvg Server
 
 class ADMM_SSA(Server2):
-    def __init__(self, algorithm, experiment, device, dataset, learning_rate, ro, num_glob_iters, local_epochs, num_users, dim, time, imputationORforecast):
-        super().__init__(device, dataset, learning_rate, ro, num_glob_iters, local_epochs, num_users, dim, time)
+    def __init__(self, algorithm, experiment, device, dataset, learning_rate, ro, num_glob_iters, local_epochs, num_users, dim, time, window, imputationORforecast):
+        super().__init__(device, dataset, learning_rate, ro, num_glob_iters, local_epochs, num_users, dim, window, time)
 
         # Initialize data for all  users
         self.algorithm = algorithm
         self.K = 0
         self.dim = dim
         self.experiment = experiment
-        total_users = len(dataset[0][0])
         np.random.seed(1993)
-        total_users = 20
+        if dataset == 'debug': self.debug = True
+        else: self.debug = False
+        if self.debug:
+            total_users = 2
+        else:
+            if dataset[:4] == 'Elec':
+                total_users = int(dataset[4:])
         print("total users: ", total_users)
         self.num_users = total_users
         self.imputationORforecast = imputationORforecast
 
         # self.store_ids = ['2', '3', '4']
-        self.house_ids = ['MT_{0:03}'.format(i+1) for i in range(20)]
+        self.house_ids = ['MT_{0:03}'.format(i+1) for i in range(total_users)]
         
         self.all_train_data = []
 
@@ -41,10 +46,12 @@ class ADMM_SSA(Server2):
             # store_id = self.store_ids[i]
             # train = self.get_store_sale_data(store_id)
             
-            # id = i
-            # train = self.generate_synthetic_data_gaussian(id)
-            id = self.house_ids[i]
-            train = self.get_electricity_data(id)
+            if self.debug:
+                id = i
+                train = self.generate_synthetic_data_gaussian(id)
+            else:
+                id = self.house_ids[i]
+                train = self.get_electricity_data(id)
 
             self.all_train_data.append(train)
 
@@ -77,20 +84,10 @@ class ADMM_SSA(Server2):
         print("Finished creating FedAvg server.")
 
     def generate_synthetic_data(self):
-        N = 200 # The number of time 'moments' in our toy series
-        t = np.arange(0,N)
-        trend = 0.001 * (t - 100)**2
-        p1 = 20
-        periodic1 = 2 * np.sin(2*pi*t/p1)
-        noise = 2 * (np.random.rand(N) - 0.5)
-        F = trend + periodic1 + noise
-        L = 20 # The window length
-        K = N - L + 1  # number of columns in the trajectory matrix
-        X = np.column_stack([F[i:i+L] for i in range(0,K)])
-        X.astype(float)
-        sX = StandardScaler(copy=True)
-        C = sX.fit_transform(X)
-        return C
+        data = pd.read_csv("data/MixtureTS_var.csv", index_col = 'time')
+        df = pd.DataFrame(index=data.index)
+        df['ts'] = data['ts']
+        return df
 
     def generate_synthetic_data_gaussian(self, id):
         np.random.seed(id)
@@ -110,7 +107,7 @@ class ADMM_SSA(Server2):
         sales = store_sale['sales'].copy()
         F = sales.to_numpy()
         N = F.shape[0]
-        L = 20 # The window length
+        L = self.window # The window length
         K = N - L + 1  # number of columns in the trajectory matrix
         X = np.column_stack([F[i:i+L] for i in range(0,K)])
         X.astype(float)
@@ -127,14 +124,17 @@ class ADMM_SSA(Server2):
         colname = mt_id
         elec = house[colname].copy()
         F = elec.to_numpy()
-        N = F.shape[0]
-        L = 160 # The window length
-
+        N = F.shape[0] 
+        L = self.window # The window length
+        M = int(N*self.num_users/L)
+        if M%self.num_users != 0:
+            M -= M%self.num_users
+        M /= self.num_users
         # K = N - L + 1  # number of columns in the trajectory matrix
         # X = np.column_stack([F[i:i+L] for i in range(0,K)])
-
         # Obtain Page matrix instead
-        X = F.reshape([L,int(N/L)], order = 'F')
+        X = F[:int(L*M)].reshape([int(L),int(M)], order = 'F')
+        print(X.shape)
         X.astype(float)
 
         if self.imputationORforecast: 
@@ -192,14 +192,14 @@ class ADMM_SSA(Server2):
         directory = os.getcwd()
         results_folder_path = os.path.join(directory, "results/SSA")
         suffix = 'forecast' if self.imputationORforecast else 'imputation'
-        result_filename = f"Grassmann_ADMM_Electricity_{self.num_users}_L20_d{self.dim}_{suffix}"
+        result_filename = f"Grassmann_ADMM_{self.dataset}_N{self.num_users}_L{self.window}_d{self.dim}_{suffix}"
         result_path = os.path.join(results_folder_path, result_filename)
-        # np.save(result_path, self.Z)
-        # # Jiayu: save Ui for each clients
-        # with h5py.File(result_path+'.h5', 'w') as hf:
-        #     for i,user in enumerate(self.selected_users):
-        #         hf.create_dataset(user.id, data=user.localPCA.detach().numpy().copy())
-        #     hf.close()
+        np.save(result_path, self.Z)
+        # Jiayu: save Ui for each clients
+        with h5py.File(result_path+'.h5', 'w') as hf:
+            for i,user in enumerate(self.selected_users):
+                hf.create_dataset(user.id, data=user.localPCA.detach().numpy().copy())
+            hf.close()
 
         print("Completed training!!!")
         # self.save_results()

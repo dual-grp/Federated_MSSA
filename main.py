@@ -8,7 +8,7 @@ import importlib
 import random
 import os
 from FLAlgorithms.servers.serverADMM import ADMM
-from FLAlgorithms.servers.serverSSA import ADMM_SSA
+from FLAlgorithms.servers.serverSSA2 import ADMM_SSA # Jiayu: add constraint - ZTZ = I
 from FLAlgorithms.servers.serverAbnormalDetection import AbnormalDetection
 from utils.model_utils import read_data
 from FLAlgorithms.trainmodel.models import *
@@ -21,13 +21,13 @@ from utils.options import args_parser
 #                                                                                                                           
 # Create an experiment with your api key:
 def main(experiment, dataset, algorithm, batch_size, learning_rate, ro, num_glob_iters,
-         local_epochs, numusers,dim, times, gpu, ):
+         local_epochs, numusers,dim, times, gpu, window):
     
     # Get device status: Check GPU or CPU
     device = torch.device("cuda:{}".format(gpu) if torch.cuda.is_available() and gpu != -1 else "cpu")
     # data = read_data(dataset) , dataset
-    data = "KDD"
-    server = ADMM_SSA(algorithm, experiment, device, data, learning_rate, ro, num_glob_iters, local_epochs, numusers, dim, times, imputationORforecast=0)
+    data = dataset
+    server = ADMM_SSA(algorithm, experiment, device, data, learning_rate, ro, num_glob_iters, local_epochs, numusers, dim, times, window, imputationORforecast=0)
     server.train()
     # server_forecast = ADMM_SSA(algorithm, experiment, device, data, learning_rate, ro, num_glob_iters, local_epochs, numusers, dim, times, imputationORforecast=1)
     # server_forecast.train()
@@ -62,6 +62,7 @@ if __name__ == "__main__":
             "learning_rate":args.learning_rate,
             "ro":args.ro,
             "dim" : args.dim,
+            "window": args.window,
             "num_glob_iters":args.num_global_iters,
             "local_epochs":args.local_epochs,
             "numusers": args.subusers,
@@ -85,6 +86,7 @@ if __name__ == "__main__":
         local_epochs=args.local_epochs,
         numusers = args.subusers,
         dim = args.dim,
+        window = args.window,
         times = args.times,
         gpu=args.gpu
         )

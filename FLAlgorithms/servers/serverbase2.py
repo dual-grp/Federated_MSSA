@@ -163,9 +163,9 @@ class Server2:
         # loss_train verified, same as below
         loss_train = torch.norm(residual, p="fro")
         # loss_train2 = self.re_error(self.commonPCAz.detach().numpy(), self.all_train_data.to(torch.float64))
-        print("check Z", (torch.matmul(self.commonPCAz.T,self.commonPCAz)- torch.eye(self.commonPCAz.shape[1])).detach().numpy()[:3,:3] )
-        print("print Z", self.commonPCAz.detach().numpy()[:3,:3])
-        print("evaluate all data", loss_train)
+        # print("check Z", (torch.matmul(self.commonPCAz.T,self.commonPCAz)- torch.eye(self.commonPCAz.shape[1])).detach().numpy()[:3,:3] )
+        # print("print Z", self.commonPCAz.detach().numpy()[:3,:3])
+        print("evaluate all data over server", loss_train)
         # print("evaluate all data2", loss_train2)
         return loss_train
 

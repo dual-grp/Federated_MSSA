@@ -174,6 +174,7 @@ class ADMM_SSA(Server2):
 
             # Evaluate model each interation
             self.evaluate()
+            _ = self.evaluate_all_data()
 
             # self.selected_users = self.select_users(glob_iter,self.num_users)
             

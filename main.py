@@ -21,13 +21,13 @@ from utils.options import args_parser
 #                                                                                                                           
 # Create an experiment with your api key:
 def main(experiment, dataset, algorithm, batch_size, learning_rate, ro, num_glob_iters,
-         local_epochs, numusers,dim, times, gpu, window):
+         local_epochs, numusers,dim, times, gpu, window, ro_auto):
     
     # Get device status: Check GPU or CPU
     device = torch.device("cuda:{}".format(gpu) if torch.cuda.is_available() and gpu != -1 else "cpu")
     # data = read_data(dataset) , dataset
     data = dataset
-    server = ADMM_SSA(algorithm, experiment, device, data, learning_rate, ro, num_glob_iters, local_epochs, numusers, dim, times, window, imputationORforecast=0)
+    server = ADMM_SSA(algorithm, experiment, device, data, learning_rate, ro, num_glob_iters, local_epochs, numusers, dim, times, window, ro_auto, imputationORforecast=0)
     server.train()
     # server_forecast = ADMM_SSA(algorithm, experiment, device, data, learning_rate, ro, num_glob_iters, local_epochs, numusers, dim, times, imputationORforecast=1)
     # server_forecast.train()
@@ -40,6 +40,7 @@ if __name__ == "__main__":
     print("Batch size: {}".format(args.batch_size))
     print("Learing rate       : {}".format(args.learning_rate))
     print("Average Moving       : {}".format(args.ro))
+    print("Auto Average Moving  : {}".format(args.ro_auto))
     print("Subset of users      : {}".format(args.subusers))
     print("Number of global rounds       : {}".format(args.num_global_iters))
     print("Number of local rounds       : {}".format(args.local_epochs))
@@ -61,6 +62,7 @@ if __name__ == "__main__":
             "batch_size":args.batch_size,
             "learning_rate":args.learning_rate,
             "ro":args.ro,
+            "ro_hong":args.ro_auto,
             "dim" : args.dim,
             "window": args.window,
             "num_glob_iters":args.num_global_iters,
@@ -82,6 +84,7 @@ if __name__ == "__main__":
         batch_size=args.batch_size,
         learning_rate=args.learning_rate,
         ro = args.ro,   
+        ro_auto = args.ro_auto,
         num_glob_iters=args.num_global_iters,
         local_epochs=args.local_epochs,
         numusers = args.subusers,

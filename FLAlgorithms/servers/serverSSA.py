@@ -131,7 +131,7 @@ class ADMM_SSA(Server2):
         elec = house[colname].copy()
         F = elec.to_numpy()
         N = F.shape[0]
-        L = 160 # The window length
+        L = 320 # The window length
 
         # K = N - L + 1  # number of columns in the trajectory matrix
         # X = np.column_stack([F[i:i+L] for i in range(0,K)])

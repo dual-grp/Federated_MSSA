@@ -6,7 +6,7 @@ from utils.model_utils import Metrics
 import copy
 
 class Server2:
-    def __init__(self, device, dataset, learning_rate, ro, num_glob_iters, local_epochs, num_users, dim, window, times):
+    def __init__(self, device, dataset, learning_rate, ro, num_glob_iters, local_epochs, num_users, dim, window, ro_auto, times):
         self.device = device
         self.dataset = dataset
         self.num_glob_iters = num_glob_iters
@@ -21,6 +21,10 @@ class Server2:
         self.times = times
         self.dim = dim
         self.window = window
+        self.ro_auto = ro_auto
+        if self.ro_auto:
+            self.str_ro = 'auto'
+        else: self.str_ro = ro
 
     def send_pca(self):
         assert (self.users is not None and len(self.users) > 0)
@@ -65,7 +69,7 @@ class Server2:
                 self.loss_hZ = 0.5 * self.ro * torch.norm(hZ) ** 2 + torch.sum(torch.inner(self.localG, hZ))
 
                 for user in self.users:
-                    self.loss_UZ = self.loss_UZ + torch.sum(torch.inner(user.localY, user.localPCA - self.commonPCAz)) + 0.5 * self.ro * torch.norm(user.localPCA - self.commonPCAz)** 2
+                    self.loss_UZ = self.loss_UZ + torch.sum(torch.inner(user.localY, user.localPCA - self.commonPCAz)) + 0.5 * user.ro * torch.norm(user.localPCA - self.commonPCAz)** 2
 
                 self.loss = self.loss_UZ + self.loss_hZ
                 self.loss = self.loss / self.total_train_samples
@@ -94,7 +98,7 @@ class Server2:
                 #     self.commonPCAz.grad.data.zero_()
 
                 for user in self.users:
-                    self.loss = self.loss + torch.sum(torch.inner(user.localY, user.localPCA - self.commonPCAz)) + 0.5 * self.ro * torch.norm(user.localPCA - self.commonPCAz)** 2
+                    self.loss = self.loss + torch.sum(torch.inner(user.localY, user.localPCA - self.commonPCAz)) + 0.5 * user.ro * torch.norm(user.localPCA - self.commonPCAz)** 2
                 self.loss = self.loss / self.total_train_samples
                 temp = self.commonPCAz.data.clone()
                 # solve global problem

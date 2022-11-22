@@ -9,10 +9,11 @@ def args_parser():
     # parser.add_argument('--seed', type=int, default=1, help='random seed (default: 1)')
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", type=str, default="debug") # choices=["debug","Elec","Elec20"]
+    parser.add_argument("--dataset", type=str, default="debug") # choices=["debug","Elec5","Elec20"]
     parser.add_argument("--batch_size", type=int, default=0)
     parser.add_argument("--learning_rate", type=float, default = 0.005, help="Local learning rate")
-    parser.add_argument("--ro", type=float, default=0.1, help="Regularization term")
+    parser.add_argument("--ro", type=float, default=1.0, help="Regularization term")
+    parser.add_argument("--ro_auto", type=int, default=1, help="Regularization term chosen based on Hong2014/Hajinezhad2015")
     parser.add_argument("--num_global_iters", type=int, default=10)
     parser.add_argument("--local_epochs", type=int, default = 1)
     parser.add_argument("--dim", type=int, default = 3)

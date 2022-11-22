@@ -16,8 +16,8 @@ import h5py
 # Implementation for FedAvg Server
 
 class ADMM_SSA(Server2):
-    def __init__(self, algorithm, experiment, device, dataset, learning_rate, ro, num_glob_iters, local_epochs, num_users, dim, time, window, imputationORforecast):
-        super().__init__(device, dataset, learning_rate, ro, num_glob_iters, local_epochs, num_users, dim, window, time)
+    def __init__(self, algorithm, experiment, device, dataset, learning_rate, ro, num_glob_iters, local_epochs, num_users, dim, time, window, ro_auto, imputationORforecast):
+        super().__init__(device, dataset, learning_rate, ro, num_glob_iters, local_epochs, num_users, dim, window, ro_auto, time)
 
         # Initialize data for all  users
         self.algorithm = algorithm
@@ -70,7 +70,7 @@ class ADMM_SSA(Server2):
 
             # check = torch.matmul(U.T,U)
 
-            user = UserADMM2(algorithm, device, id, train, self.commonPCAz, learning_rate, ro, local_epochs, dim)
+            user = UserADMM2(algorithm, device, id, train, self.commonPCAz, learning_rate, ro, local_epochs, dim, ro_auto)
             self.users.append(user)
             self.total_train_samples += user.train_samples
         
@@ -192,13 +192,13 @@ class ADMM_SSA(Server2):
         directory = os.getcwd()
         results_folder_path = os.path.join(directory, "results/SSA")
         suffix = 'forecast' if self.imputationORforecast else 'imputation'
-        result_filename = f"Grassmann_ADMM_{self.dataset}_N{self.num_users}_L{self.window}_d{self.dim}_{suffix}"
+        result_filename = f"Grassmann_ADMM_{self.dataset}_N{self.num_users}_L{self.window}_d{self.dim}_rho{self.str_ro}_{suffix}"
         result_path = os.path.join(results_folder_path, result_filename)
         np.save(result_path, self.Z)
         # Jiayu: save Ui for each clients
         with h5py.File(result_path+'.h5', 'w') as hf:
             for i,user in enumerate(self.selected_users):
-                hf.create_dataset(user.id, data=user.localPCA.detach().numpy().copy())
+                hf.create_dataset(str(user.id), data=user.localPCA.detach().numpy().copy())
             hf.close()
 
         print("Completed training!!!")

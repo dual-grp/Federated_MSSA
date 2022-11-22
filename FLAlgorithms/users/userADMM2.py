@@ -7,7 +7,7 @@ import copy
 '''Implementation for FedPCA clients''' 
 
 class UserADMM2():
-    def __init__(self, algorithm, device, id, train_data, commonPCA, learning_rate, ro, local_epochs, dim):
+    def __init__(self, algorithm, device, id, train_data, commonPCA, learning_rate, ro, local_epochs, dim, ro_auto):
         self.localPCA   = copy.deepcopy(commonPCA) # local U
         self.localZ     = copy.deepcopy(commonPCA)
         self.localY     = copy.deepcopy(commonPCA)
@@ -22,6 +22,8 @@ class UserADMM2():
         self.train_data = train_data # This line is used for SSA
         self.algorithm = algorithm
         self.localPCA.requires_grad_(True)
+        if ro_auto:
+            self.ro = int(4 * torch.norm(torch.matmul(self.train_data,self.train_data.T)) / self.train_data.shape[1]) * 1.0
 
     def set_commonPCA(self, commonPCA):
         ''' Update local Y: comment this section if we use simplified version of FedPCA where Y^{i+1}=0 after first iteration'''

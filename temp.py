@@ -1,7 +1,9 @@
-python3 main.py --algorithm FedPG --learning_rate 0.005 --num_global_iters 20 --dim 20 --local_epochs 30 --ro 0.01 --dataset Elec20 --window 320
+python3 main.py --algorithm FedPG --learning_rate 0.005 --num_global_iters 25 --dim 20 --local_epochs 30 --ro 1 --dataset Elec20 --window 80 --ro_auto 0
+python3 main.py --algorithm FedPG --learning_rate 0.005 --num_global_iters 25 --dim 20 --local_epochs 30 --ro 1 --dataset Elec20 --window 80 --ro_auto 1
 
-python3 main.py --algorithm FedPG --learning_rate 0.005 --num_global_iters 250 --dim 80 --local_epochs 30 --ro 0.01 --dataset Elec5 --window 80
-python3 main.py --algorithm FedPG --learning_rate 0.005 --num_global_iters 250 --dim 75 --local_epochs 30 --ro 0.01 --dataset Elec5 --window 80
+python3 main.py --algorithm FedPG --learning_rate 0.005 --num_global_iters 25 --dim 320 --local_epochs 30 --ro 0.01 --dataset Elec20 --window 320 --ro_auto 1
+python3 main.py --algorithm FedPG --learning_rate 0.005 --num_global_iters 25 --dim 80 --local_epochs 30 --ro 0.01 --dataset Elec20 --window 80 --ro_auto 1
+python3 main.py --algorithm FedPG --learning_rate 0.005 --num_global_iters 250 --dim 75 --local_epochs 30 --ro 0.01 --dataset Elec20 --window 80
 python3 main.py --algorithm FedPG --learning_rate 0.005 --num_global_iters 250 --dim 70 --local_epochs 30 --ro 0.01 --dataset Elec5 --window 80
 python3 main.py --algorithm FedPG --learning_rate 0.005 --num_global_iters 250 --dim 65 --local_epochs 30 --ro 0.01 --dataset Elec5 --window 80
 python3 main.py --algorithm FedPG --learning_rate 0.005 --num_global_iters 250 --dim 60 --local_epochs 30 --ro 0.01 --dataset Elec5 --window 80

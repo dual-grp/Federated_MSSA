@@ -120,7 +120,7 @@ class ADMM_SSA(Server2):
         store_name = f"{mt_id}.csv"
         file_path = DATA_PATH + store_name
         house = pd.read_csv(file_path)
-        print(file_path)
+        # print(file_path)
         colname = mt_id
         elec = house[colname].copy()
         F = elec.to_numpy()
@@ -134,7 +134,7 @@ class ADMM_SSA(Server2):
         # X = np.column_stack([F[i:i+L] for i in range(0,K)])
         # Obtain Page matrix instead
         X = F[:int(L*M)].reshape([int(L),int(M)], order = 'F')
-        print(X.shape)
+        # print(X.shape)
         X.astype(float)
 
         if self.imputationORforecast: 

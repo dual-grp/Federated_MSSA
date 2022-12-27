@@ -170,22 +170,49 @@ class Server2:
         return loss_train
 
     def re_error(self, u, X):
-        Xhat = u.dot(u.T.dot(X))
-    #     print("Xhat.shape = ", Xhat.shape)
-        re_error = np.linalg.norm(X-Xhat)
-    #     return np.sqrt(((u.dot(u.T.dot(X)) - X)**2).sum())
+        # comment out codes for array
+        # Xhat = u.dot(u.T.dot(X))
+        # re_error = np.linalg.norm(X-Xhat)
+        Xhat = torch.matmul(u,torch.matmul(u.T, X))
+        re_error = torch.norm(X-Xhat)
         return re_error
 
+    def check_train_exists(self):
+        directory = os.getcwd()
+        results_folder_path = os.path.join(directory, "results/SSA")
+        suffix = 'forecast' if self.imputationORforecast else 'imputation'
+        result_filename = f"Grassmann_ADMM_{self.dataset}_N{self.num_users}_L{self.window}_d{self.dim}_rho{self.str_ro}_{suffix}"
+        result_path = os.path.join(results_folder_path, result_filename)
+        np.save(result_path, self.Z)
+        # Jiayu: save Ui for each clients
+        with h5py.File(result_path+'.h5', 'w') as hf:
+            for i,user in enumerate(self.selected_users):
+                hf.create_dataset(str(user.id), data=user.localPCA.detach().numpy().copy())
+            hf.close()
+
     def save_results(self):
-        dir_path = "./results"
-        if not os.path.exists(dir_path):
-            os.makedirs(dir_path)
-        alg = self.dataset[1] + "ADMM" + "_" + str(self.learning_rate)  + "_" + str(self.ro) + "_" + str(self.num_users) + "u" + "_" + str(self.batch_size) + "b" + "_" + str(self.local_epochs) 
-        alg = alg + "_" + str(self.times)
-        if (len(self.rs_glob_acc) != 0 &  len(self.rs_train_acc) & len(self.rs_train_loss)) :
-            with h5py.File("./results/"+'{}.h5'.format(alg, self.local_epochs), 'w') as hf:
-                hf.create_dataset('rs_glob_acc', data=self.rs_glob_acc)
-                hf.create_dataset('rs_train_acc', data=self.rs_train_acc)
-                hf.create_dataset('rs_train_loss', data=self.rs_train_loss)
-                hf.close()
+        directory = os.getcwd()
+        results_folder_path = os.path.join(directory, "results/SSA")
+        suffix = 'forecast' if self.imputationORforecast else 'imputation'
+        result_filename = f"Grassmann_ADMM_{self.dataset}_N{self.num_users}_L{self.window}_d{self.dim}_rho{self.str_ro}_{suffix}"
+        result_path = os.path.join(results_folder_path, result_filename)
+        np.save(result_path, self.Z)
+        # Jiayu: save Ui for each clients
+        with h5py.File(result_path+'.h5', 'w') as hf:
+            for i,user in enumerate(self.selected_users):
+                hf.create_dataset(str(user.id), data=user.localPCA.detach().numpy().copy())
+            hf.close()
+
+    # def save_results(self):
+    #     dir_path = "./results"
+    #     if not os.path.exists(dir_path):
+    #         os.makedirs(dir_path)
+    #     alg = self.dataset[1] + "ADMM" + "_" + str(self.learning_rate)  + "_" + str(self.ro) + "_" + str(self.num_users) + "u" + "_" + str(self.batch_size) + "b" + "_" + str(self.local_epochs) 
+    #     alg = alg + "_" + str(self.times)
+    #     if (len(self.rs_glob_acc) != 0 &  len(self.rs_train_acc) & len(self.rs_train_loss)) :
+    #         with h5py.File("./results/"+'{}.h5'.format(alg, self.local_epochs), 'w') as hf:
+    #             hf.create_dataset('rs_glob_acc', data=self.rs_glob_acc)
+    #             hf.create_dataset('rs_train_acc', data=self.rs_train_acc)
+    #             hf.create_dataset('rs_train_loss', data=self.rs_train_loss)
+    #             hf.close()
 

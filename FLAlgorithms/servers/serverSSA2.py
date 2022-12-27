@@ -32,7 +32,9 @@ class ADMM_SSA(Server2):
         else:
             if dataset[:4] == 'Elec':
                 total_users = int(dataset[4:])
-        print("total users: ", total_users)
+            elif dataset[:7] == 'Traffic':
+                total_users = int(dataset[7:])
+            print("total users: ", total_users)
         self.num_users = total_users
         self.imputationORforecast = imputationORforecast
 
@@ -49,9 +51,12 @@ class ADMM_SSA(Server2):
             if self.debug:
                 id = i
                 train = self.generate_synthetic_data_gaussian(id)
-            else:
+            elif dataset[:4] == 'Elec':
                 id = self.house_ids[i]
                 train = self.get_electricity_data(id)
+            elif dataset[:7] == 'Traffic':
+                id = self.house_ids[i]
+                train = self.get_traffic_data(id)
 
             self.all_train_data.append(train)
 
@@ -77,7 +82,7 @@ class ADMM_SSA(Server2):
         # Jiayu: add constraint - ZTZ = I
         self.localG = torch.matmul(self.commonPCAz.T, self.commonPCAz)
 
-        self.all_train_data = np.hstack(self.all_train_data)
+        self.all_train_data_array = np.hstack(self.all_train_data)
         self.all_train_data = torch.tensor(self.all_train_data, dtype=torch.float64)
             
         print("Number of users / total users:",num_users, " / " ,total_users)
@@ -114,7 +119,41 @@ class ADMM_SSA(Server2):
         sX = StandardScaler(copy=True)
         C = sX.fit_transform(X)
         return C
-    
+
+    def get_traffic_data(self, mt_id):
+        DATA_PATH = "traffic_train/"
+        store_name = f"{mt_id}.csv"
+        file_path = DATA_PATH + store_name
+        house = pd.read_csv(file_path)
+        # print(file_path)
+        colname = mt_id
+        elec = house[colname].copy()
+        F = elec.to_numpy()
+        N = F.shape[0] 
+        L = self.window # The window length
+        M = int(N*self.num_users/L)
+        if M%self.num_users != 0:
+            M -= M%self.num_users
+        M /= self.num_users
+        # K = N - L + 1  # number of columns in the trajectory matrix
+        # X = np.column_stack([F[i:i+L] for i in range(0,K)])
+        # Obtain Page matrix instead
+        X = F[:int(L*M)].reshape([int(L),int(M)], order = 'F')
+        # print(X.shape)
+        X.astype(float)
+
+        if self.imputationORforecast: 
+            results_folder_path = os.path.join(os.getcwd(), "results/SSA")
+            result_filename = f"Grassmann_ADMM_Electricity_{self.num_users}_L20_d{self.dim}_imputation.npy"
+            result_path = os.path.join(results_folder_path, result_filename)
+            Z = np.load(result_path)
+            Xhat = Z.dot(Z.T.dot(X))
+            Xhat = Xhat[:-1,:]
+            return Xhat
+            
+        else:
+            return X
+
     def get_electricity_data(self, mt_id):
         DATA_PATH = "electricity_train/"
         store_name = f"{mt_id}.csv"
@@ -190,18 +229,18 @@ class ADMM_SSA(Server2):
 
         loss_all_data = self.evaluate_all_data()
         self.Z = self.commonPCAz.detach().numpy().copy()
-        directory = os.getcwd()
-        results_folder_path = os.path.join(directory, "results/SSA")
-        suffix = 'forecast' if self.imputationORforecast else 'imputation'
-        result_filename = f"Grassmann_ADMM_{self.dataset}_N{self.num_users}_L{self.window}_d{self.dim}_rho{self.str_ro}_{suffix}"
-        result_path = os.path.join(results_folder_path, result_filename)
-        np.save(result_path, self.Z)
-        # Jiayu: save Ui for each clients
-        with h5py.File(result_path+'.h5', 'w') as hf:
-            for i,user in enumerate(self.selected_users):
-                hf.create_dataset(str(user.id), data=user.localPCA.detach().numpy().copy())
-            hf.close()
 
-        print("Completed training!!!")
-        # self.save_results()
+
+
+        self.save_results()
         # self.save_model()
+        print("Completed training!!!")
+
+    def predict(self):
+        print("Start predicting")
+        # evaluate imputation/reconstruction error
+        re_error = self.re_error(self.commonPCAz, self.all_train_data)
+        print("reconstruction_error %f.8" % (re_error))
+        for user in self.selected_users:
+            user.localZ = self.commonPCAz
+            

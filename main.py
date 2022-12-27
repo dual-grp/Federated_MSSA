@@ -28,7 +28,10 @@ def main(experiment, dataset, algorithm, batch_size, learning_rate, ro, num_glob
     # data = read_data(dataset) , dataset
     data = dataset
     server = ADMM_SSA(algorithm, experiment, device, data, learning_rate, ro, num_glob_iters, local_epochs, numusers, dim, times, window, ro_auto, imputationORforecast=0)
-    server.train()
+    if server.check_train_exists():
+        server.train()
+    else:
+        server.read_results()
     # server_forecast = ADMM_SSA(algorithm, experiment, device, data, learning_rate, ro, num_glob_iters, local_epochs, numusers, dim, times, imputationORforecast=1)
     # server_forecast.train()
 

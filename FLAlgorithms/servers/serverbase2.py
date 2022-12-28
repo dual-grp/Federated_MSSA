@@ -181,14 +181,14 @@ class Server2:
         directory = os.getcwd()
         results_folder_path = os.path.join(directory, "results/SSA")
         suffix = 'forecast' if self.imputationORforecast else 'imputation'
-        result_filename = f"Grassmann_ADMM_{self.dataset}_N{self.num_users}_L{self.window}_d{self.dim}_rho{self.str_ro}_{suffix}"
+        result_filename = f"Grassmann_ADMM_{self.dataset}_N{self.num_users}_L{self.window}_d{self.dim}_rho{self.str_ro}_{suffix}.npy"
         result_path = os.path.join(results_folder_path, result_filename)
-        np.save(result_path, self.Z)
-        # Jiayu: save Ui for each clients
-        with h5py.File(result_path+'.h5', 'w') as hf:
-            for i,user in enumerate(self.selected_users):
-                hf.create_dataset(str(user.id), data=user.localPCA.detach().numpy().copy())
-            hf.close()
+        if os.path.exists(result_path):
+            self.Z = np.load(result_path)
+            self.commonPCAz = torch.tensor(self.Z, dtype=torch.float64)
+            return 1
+        else:
+            return 0
 
     def save_results(self):
         directory = os.getcwd()

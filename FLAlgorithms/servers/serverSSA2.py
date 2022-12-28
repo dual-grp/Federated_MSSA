@@ -83,7 +83,7 @@ class ADMM_SSA(Server2):
         self.localG = torch.matmul(self.commonPCAz.T, self.commonPCAz)
 
         self.all_train_data_array = np.hstack(self.all_train_data)
-        self.all_train_data = torch.tensor(self.all_train_data, dtype=torch.float64)
+        self.all_train_data = torch.tensor(self.all_train_data_array, dtype=torch.float64)
             
         print("Number of users / total users:",num_users, " / " ,total_users)
         print("Finished creating FedAvg server.")
@@ -163,16 +163,17 @@ class ADMM_SSA(Server2):
         colname = mt_id
         elec = house[colname].copy()
         F = elec.to_numpy()
-        N = F.shape[0] 
+        T = F.shape[0] 
         L = self.window # The window length
-        M = int(N*self.num_users/L)
+        M = int(T*self.num_users/L)
         if M%self.num_users != 0:
             M -= M%self.num_users
         M /= self.num_users
         # K = N - L + 1  # number of columns in the trajectory matrix
         # X = np.column_stack([F[i:i+L] for i in range(0,K)])
-        # Obtain Page matrix instead
-        X = F[:int(L*M)].reshape([int(L),int(M)], order = 'F')
+        # Obtain Page matrix
+        # X = F[:int(L*M)].reshape([int(L),int(M)], order = 'F')
+        X = F[T%L:].reshape([int(L),int(M)], order = 'F') # comment out first range, use second range instead
         # print(X.shape)
         X.astype(float)
 
@@ -229,8 +230,6 @@ class ADMM_SSA(Server2):
 
         loss_all_data = self.evaluate_all_data()
         self.Z = self.commonPCAz.detach().numpy().copy()
-
-
 
         self.save_results()
         # self.save_model()

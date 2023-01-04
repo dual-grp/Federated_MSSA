@@ -32,7 +32,7 @@ class ADMM_SSA(Server2):
         else:
             if dataset[:4] == 'Elec':
                 total_users = int(dataset[4:])
-                total_users = 370
+                
             elif dataset[:7] == 'Traffic':
                 total_users = int(dataset[7:])
             print("total users: ", total_users)

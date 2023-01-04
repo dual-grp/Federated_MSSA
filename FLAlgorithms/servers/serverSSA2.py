@@ -24,7 +24,7 @@ class ADMM_SSA(Server2):
         self.K = 0
         self.dim = dim
         self.experiment = experiment
-        np.random.seed(1993)
+        # np.random.seed(1993)
         if dataset == 'debug': self.debug = True
         else: self.debug = False
         if self.debug:
@@ -32,9 +32,11 @@ class ADMM_SSA(Server2):
         else:
             if dataset[:4] == 'Elec':
                 total_users = int(dataset[4:])
+                total_users = 370
             elif dataset[:7] == 'Traffic':
                 total_users = int(dataset[7:])
             print("total users: ", total_users)
+        self.user_fraction = num_users # Define the percentage of global user
         self.num_users = total_users
         self.imputationORforecast = imputationORforecast
 
@@ -53,7 +55,8 @@ class ADMM_SSA(Server2):
                 train = self.generate_synthetic_data_gaussian(id)
             elif dataset[:4] == 'Elec':
                 id = self.house_ids[i]
-                train = self.get_electricity_data(id)
+                # train = self.get_electricity_data(id)
+                train = self.get_electricity_data_missing_val(id)
             elif dataset[:7] == 'Traffic':
                 id = self.house_ids[i]
                 train = self.get_traffic_data(id)
@@ -189,6 +192,40 @@ class ADMM_SSA(Server2):
         else:
             return X
 
+    def get_electricity_data_missing_val(self, mt_id):
+        DATA_PATH = "data/electricity_train_missing_20/"
+        store_name = f"{mt_id}.csv"
+        file_path = DATA_PATH + store_name
+        house = pd.read_csv(file_path)
+        # print(file_path)
+        colname = mt_id
+        elec = house[colname].copy()
+        F = elec.to_numpy()
+        T = F.shape[0] 
+        L = self.window # The window length
+        M = int(T*self.num_users/L)
+        if M%self.num_users != 0:
+            M -= M%self.num_users
+        M /= self.num_users
+        # K = N - L + 1  # number of columns in the trajectory matrix
+        # X = np.column_stack([F[i:i+L] for i in range(0,K)])
+        # Obtain Page matrix
+        # X = F[:int(L*M)].reshape([int(L),int(M)], order = 'F')
+        X = F[T%L:].reshape([int(L),int(M)], order = 'F') # comment out first range, use second range instead
+        # print(X.shape)
+        X.astype(float)
+
+        if self.imputationORforecast: 
+            results_folder_path = os.path.join(os.getcwd(), "results/SSA")
+            result_filename = f"Grassmann_ADMM_Electricity_{self.num_users}_L20_d{self.dim}_imputation.npy"
+            result_path = os.path.join(results_folder_path, result_filename)
+            Z = np.load(result_path)
+            Xhat = Z.dot(Z.T.dot(X))
+            Xhat = Xhat[:-1,:]
+            return Xhat
+            
+        else:
+            return X
         # We did scaling when producing csv
 
         # sX = StandardScaler(copy=True)
@@ -205,6 +242,7 @@ class ADMM_SSA(Server2):
         print("Selected users: ")
         for i, user in enumerate(self.selected_users):
             print("user_id selected for training: ", i)
+
         for glob_iter in range(self.num_glob_iters):
             if(self.experiment):
                 self.experiment.set_epoch( glob_iter + 1)
@@ -216,12 +254,13 @@ class ADMM_SSA(Server2):
             self.evaluate()
             _ = self.evaluate_all_data()
 
-            # self.selected_users = self.select_users(glob_iter,self.num_users)
-            
+            self.selected_users = self.select_users(glob_iter, self.user_fraction)
+
             # self.users = self.selected_users 
             #NOTE: this is required for the ``fork`` method to work
             for user in self.selected_users:
                 user.train(self.local_epochs)
+                # print(f"user_id selected for training: {user.id}")
             # self.users[0].train(self.local_epochs)
 
             # self.aggregate_pca()

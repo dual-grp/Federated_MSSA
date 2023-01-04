@@ -33,6 +33,7 @@ class ADMM_SSA(Server2):
             total_users = 20
         print("total users: ", total_users)
         self.num_users = total_users
+        self.user_fraction = num_users
         self.imputationORforecast = imputationORforecast
 
         # self.store_ids = ['2', '3', '4']
@@ -168,6 +169,7 @@ class ADMM_SSA(Server2):
         print("Selected users: ")
         for i, user in enumerate(self.selected_users):
             print("user_id selected for training: ", i)
+
         for glob_iter in range(self.num_glob_iters):
             if(self.experiment):
                 self.experiment.set_epoch( glob_iter + 1)
@@ -178,7 +180,7 @@ class ADMM_SSA(Server2):
             # Evaluate model each interation
             self.evaluate()
 
-            # self.selected_users = self.select_users(glob_iter,self.num_users)
+            self.selected_users = self.select_users(glob_iter, self.user_fraction)
             
             # self.users = self.selected_users 
             #NOTE: this is required for the ``fork`` method to work
@@ -193,7 +195,7 @@ class ADMM_SSA(Server2):
         suffix = 'forecast' if self.imputationORforecast else 'imputation'
         result_filename = f"Grassmann_ADMM_Electricity_{self.num_users}_L20_d{self.dim}_{suffix}"
         result_path = os.path.join(results_folder_path, result_filename)
-        # np.save(result_path, self.Z)
+        np.save(result_path, self.Z)
         # # Jiayu: save Ui for each clients
         # with h5py.File(result_path+'.h5', 'w') as hf:
         #     for i,user in enumerate(self.selected_users):

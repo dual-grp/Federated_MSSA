@@ -9,9 +9,10 @@ Authors: Tung-Anh Nguyen, Nguyen H.Tran
 
 - The code can be run on any pc.
 ## Instruction to run the code
+
 <pre></code>
-!ython3 main.py --algorithm FedPG --learning_rate 0.00001 --num_global_iters 100 --dim 20 --subusers 1 --local_epochs 30
-!ython3 main.py --algorithm FedPE --learning_rate 0.00001 --num_global_iters 100 --dim 20 --subusers 1 --local_epochs 30
+!python3 main.py --algorithm FedPG --learning_rate 0.00001 --num_global_iters 100 --window 80 --dim 80 --subusers 0.1 --local_epochs 30
+!python3 main.py --algorithm FedPE --learning_rate 0.00001 --num_global_iters 100 --window 80 --dim 80 --subusers 0.1 --local_epochs 30
 <code></pre>
 
 

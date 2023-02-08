@@ -8,6 +8,7 @@ import importlib
 import random
 import os
 from FLAlgorithms.servers.serverADMM import ADMM
+from FLAlgorithms.servers.serverLSTM import serverLSTM 
 from FLAlgorithms.servers.serverSSA2 import ADMM_SSA # Jiayu: add constraint - ZTZ = I
 from FLAlgorithms.servers.serverAbnormalDetection import AbnormalDetection
 from utils.model_utils import read_data
@@ -16,6 +17,7 @@ from utils.plot_utils import *
 import torch
 torch.manual_seed(0)
 from utils.options import args_parser
+from utils.train_utils import get_lstm
 
 # import comet_ml at the top of your file
 #                                                                                                                           
@@ -27,11 +29,23 @@ def main(experiment, dataset, algorithm, batch_size, learning_rate, ro, num_glob
     device = torch.device("cuda:{}".format(gpu) if torch.cuda.is_available() and gpu != -1 else "cpu")
     # data = read_data(dataset) , dataset
     data = dataset
-    server = ADMM_SSA(algorithm, experiment, device, data, learning_rate, ro, num_glob_iters, local_epochs, numusers, dim, times, window, ro_auto, imputationORforecast=0)
-    if server.check_train_exists():
-        server.train()
+    if algorithm == "FedLSTM":
+        model = get_lstm()
+        beta = 0
+        L_k = 0
+        optimizer = "SGD"
+        cutoff = 0
+        server = serverLSTM(experiment, device, dataset,algorithm, model, batch_size, learning_rate, beta, L_k, num_glob_iters, local_epochs, optimizer, numusers, times , cutoff)
     else:
-        server.train()
+        server = ADMM_SSA(algorithm, experiment, device, data, learning_rate, ro, num_glob_iters, local_epochs, numusers, dim, times, window, ro_auto, imputationORforecast=0)
+    print("Initilized server")
+    server.train()
+    print("Train Done")
+    # if server.check_train_exists():
+    #     server.train()
+    # else:
+    #     server.train()
+    
     # server_forecast = ADMM_SSA(algorithm, experiment, device, data, learning_rate, ro, num_glob_iters, local_epochs, numusers, dim, times, imputationORforecast=1)
     # server_forecast.train()
 

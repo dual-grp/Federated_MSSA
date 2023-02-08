@@ -32,3 +32,7 @@ def get_model(args):
     else:
         pasexit('Error: unrecognized model')
     return model
+
+def get_lstm():
+    model = LSTM_nn()
+    return model

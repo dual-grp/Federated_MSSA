@@ -15,6 +15,7 @@ class User:
         # from fedprox
         self.device = device
         self.model = copy.deepcopy(model)
+        self.model = self.model.to(self.device)
         self.id = id  # integer
         self.train_samples = len(train_data)
         self.test_samples = len(test_data)
@@ -28,8 +29,8 @@ class User:
             self.testloader =  DataLoader(test_data, self.test_samples,shuffle=True)
         else:
             self.trainloader = DataLoader(train_data, self.batch_size,shuffle=True)
-            if(len(train_data) < 200):
-                self.batch_size = int(len(test_data)/10)
+            # if(len(train_data) < 200):
+            #     self.batch_size = int(len(test_data)/10)
             self.testloader =  DataLoader(test_data, self.batch_size,shuffle=True)
 
         self.testloaderfull = DataLoader(test_data, self.test_samples,shuffle=True)

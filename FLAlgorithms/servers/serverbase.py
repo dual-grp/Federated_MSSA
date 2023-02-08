@@ -33,6 +33,7 @@ class Server:
         #    param.data = torch.zeros_like(param.data)
         #    param.grad = torch.zeros_like(param.data)
         #self.send_parameters()
+        self.model = self.model.to(self.device) 
 
     def get_data(self,train,test):
         if(self.sub_data == 1):
@@ -108,6 +109,18 @@ class Server:
 
     def save_model(self):
         model_path = os.path.join("models", self.dataset[1])
+        if not os.path.exists(model_path):
+            os.makedirs(model_path)
+        torch.save(self.model, os.path.join(model_path, "server" + ".pt"))
+
+    def save_model_sine(self):
+        model_path = os.path.join("models", self.dataset)
+        if not os.path.exists(model_path):
+            os.makedirs(model_path)
+        torch.save(self.model, os.path.join(model_path, "server" + ".pt"))
+
+    def save_model_lstm(self):
+        model_path = os.path.join("models", self.dataset)
         if not os.path.exists(model_path):
             os.makedirs(model_path)
         torch.save(self.model, os.path.join(model_path, "server" + ".pt"))

@@ -12,8 +12,6 @@ class UserADMM2():
         self.localZ     = copy.deepcopy(commonPCA)
         self.localY     = copy.deepcopy(commonPCA)
         self.localT     = torch.matmul(self.localPCA.T, self.localPCA)
-        # Jiayu2: add constraint decorrelated, i.e., UT X XT U = diagonal matrix
-        self.localQ = torch.rand(dim, dtype=torch.float64) # phi(Z)=diag(UT XXT U) - (UT XXT U)I, which is a vector with length dim
         self.ro = ro
         self.device = device
         self.id = id
@@ -39,11 +37,6 @@ class UserADMM2():
         # print("check U", self.id, self.localPCA.detach().numpy())
         hU = torch.max(torch.zeros(temp.shape),temp)**2
         self.localT = self.localT + self.ro * hU
-        # Jiayu2: add constraint decorrelated, i.e., UT X XT U = diagonal matrix
-        UTXXTU = torch.matmul(torch.matmul(self.localPCA.T, torch.matmul(self.train_data,self.train_data.T)), self.localPCA)
-        temp_phiU = torch.diag(UTXXTU) - torch.matmul(UTXXTU, torch.ones(self.localPCA.shape[1], dtype=torch.float64))
-        phiU = torch.max(torch.zeros(temp_phiU.shape),temp_phiU)**2
-        self.localQ = self.localQ + self.ro * phiU
 
     def train_error_and_loss(self):
         residual = torch.matmul((torch.eye(self.localPCA.shape[0]) - torch.matmul(self.localPCA, self.localPCA.T)), self.train_data)
@@ -84,15 +77,7 @@ class UserADMM2():
                 self.localPCA.requires_grad_(True)
                 residual = torch.matmul(torch.eye(self.localPCA.shape[0])- torch.matmul(self.localPCA, self.localPCA.T), self.train_data)
                 frobenius_inner = torch.sum(torch.inner(self.localY, self.localPCA - self.localZ))
-                # Jiayu2: add constraint decorrelated, i.e., UT X XT U = diagonal matrix
-                UTXXTU = torch.matmul(torch.matmul(self.localPCA.T, torch.matmul(self.train_data,self.train_data.T)), self.localPCA)
-                temp_phiU = torch.diag(UTXXTU) - torch.matmul(UTXXTU, torch.ones(self.localPCA.shape[1], dtype=torch.float64))
-                phiU = torch.max(torch.zeros(temp_phiU.shape),temp_phiU)**2
-                phiU_inner = torch.sum(torch.inner(self.localQ, phiU))
-                frobenius_inner += phiU_inner
                 regularization = 0.5 * self.ro * torch.norm(self.localPCA - self.localZ)** 2
-                phiU_regularization_ = 0.5 * self.ro * torch.norm(phiU)** 2
-                regularization += phiU_regularization_
                 self.loss = 1/self.train_samples * torch.norm(residual, p="fro") ** 2
                 self.lossADMM = self.loss + 1/self.train_samples * (frobenius_inner + regularization)
                 temp = self.localPCA.data.clone()

@@ -142,6 +142,7 @@ class serverLSTM(Server):
             #NOTE: this is required for the ``fork`` method to work
             for user in self.selected_users:
                 user.train(self.local_epochs)
+                print(f"selected user id: {user.id}")
 
             self.aggregate_parameters()
             

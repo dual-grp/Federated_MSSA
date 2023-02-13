@@ -27,6 +27,7 @@ def main(experiment, dataset, algorithm, batch_size, learning_rate, ro, num_glob
     
     # Get device status: Check GPU or CPU
     device = torch.device("cuda:{}".format(gpu) if torch.cuda.is_available() and gpu != -1 else "cpu")
+    # device = torch.device("cpu")
     # data = read_data(dataset) , dataset
     data = dataset
     if algorithm == "FedLSTM":

@@ -6,7 +6,7 @@ import copy
 
 '''Implementation for FedPCA clients''' 
 
-class UserADMM3():
+class UserADMM2():
     def __init__(self, algorithm, device, id, train_data, commonPCA, learning_rate, ro, local_epochs, dim, ro_auto):
         self.localPCA   = copy.deepcopy(commonPCA) # local U
         self.localZ     = copy.deepcopy(commonPCA)
@@ -40,10 +40,10 @@ class UserADMM3():
         hU = torch.max(torch.zeros(temp.shape),temp)**2
         self.localT = self.localT + self.ro * hU
         # Jiayu2: add constraint decorrelated, i.e., UT X XT U = diagonal matrix
-        UTXXTU = torch.matmul(torch.matmul(self.localPCA.T, torch.matmul(self.train_data,self.train_data.T)), self.localPCA)
-        temp_phiU = torch.diag(UTXXTU) - torch.matmul(UTXXTU, torch.ones(self.localPCA.shape[1], dtype=torch.float64))
+        UTXXTU = 1/self.train_data.size(1) * torch.matmul(torch.matmul(self.localPCA.T, torch.matmul(self.train_data,self.train_data.T)), self.localPCA)
+        temp_phiU = torch.diag(torch.diag(UTXXTU)) - UTXXTU
         phiU = torch.max(torch.zeros(temp_phiU.shape),temp_phiU)**2
-        self.localQ = self.localQ + self.ro * phiU
+        self.localQ = self.localQ + self.ro * phiU * 0.01
 
     def train_error_and_loss(self):
         residual = torch.matmul((torch.eye(self.localPCA.shape[0]) - torch.matmul(self.localPCA, self.localPCA.T)), self.train_data)
@@ -90,11 +90,14 @@ class UserADMM3():
                 temp_phiU = torch.diag(torch.diag(UTXXTU)) - UTXXTU
                 phiU = torch.max(torch.zeros(temp_phiU.shape),temp_phiU)**2
                 phiU_inner = torch.sum(torch.inner(self.localQ, phiU))
-                # print(frobenius_inner,phiU_inner)
+                # print("frobenius_inner, phiU_inner")
+                # print(frobenius_inner.item(),phiU_inner.item())
                 frobenius_inner += phiU_inner
                 regularization = 0.5 * self.ro * torch.norm(self.localPCA - self.localZ)** 2
                 phiU_regularization = 0.5 * self.ro * torch.norm(phiU)** 2
-                # print(regularization, phiU_regularization)
+                # print("regularization, phiU_regularization")
+                # print(regularization.item(), phiU_regularization.item())
+                # print("======")
                 regularization += phiU_regularization
 
                 self.loss = 1/self.train_samples * torch.norm(residual, p="fro") ** 2

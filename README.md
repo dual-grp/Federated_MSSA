@@ -16,9 +16,9 @@ python3 main.py --algorithm FedPE --learning_rate 0.00001 --dataset Elec20 --num
 <code></pre>
 
 ## Instruction to run the code for FedLSTM
-
 <pre></code>
 !python3 main.py --dataset Imputed_Elec370 --algorithm FedLSTM --batch_size 64 --learning_rate 0.001 --subusers 0.1 --num_global_iters 100 --local_epochs 2
 <code></pre>
+
 ## Dataset:
 Electricity dataset

@@ -86,15 +86,15 @@ class UserADMM2():
                 frobenius_inner = torch.sum(torch.inner(self.localY, self.localPCA - self.localZ))
                 # Jiayu2: add constraint decorrelated, i.e., UT X XT U = diagonal matrix
                 UTXXTU = 1/self.train_data.size(1) * torch.matmul(torch.matmul(self.localPCA.T, torch.matmul(self.train_data,self.train_data.T)), self.localPCA)
-                temp_phiU =torch.diag(UTXXTU) - torch.matmul(UTXXTU, torch.ones(self.localPCA.shape[1], dtype=torch.float64))
+                # temp_phiU =torch.diag(UTXXTU) - torch.matmul(UTXXTU, torch.ones(self.localPCA.shape[1], dtype=torch.float64))
                 temp_phiU = torch.diag(torch.diag(UTXXTU)) - UTXXTU
                 phiU = torch.max(torch.zeros(temp_phiU.shape),temp_phiU)**2
                 phiU_inner = torch.sum(torch.inner(self.localQ, phiU))
-                print(frobenius_inner,phiU_inner)
+                # print(frobenius_inner,phiU_inner)
                 frobenius_inner += phiU_inner
                 regularization = 0.5 * self.ro * torch.norm(self.localPCA - self.localZ)** 2
                 phiU_regularization = 0.5 * self.ro * torch.norm(phiU)** 2
-                print(regularization, phiU_regularization)
+                # print(regularization, phiU_regularization)
                 regularization += phiU_regularization
 
                 self.loss = 1/self.train_samples * torch.norm(residual, p="fro") ** 2

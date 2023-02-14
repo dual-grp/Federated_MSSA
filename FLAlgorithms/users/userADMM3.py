@@ -6,7 +6,7 @@ import copy
 
 '''Implementation for FedPCA clients''' 
 
-class UserADMM2():
+class UserADMM3():
     def __init__(self, algorithm, device, id, train_data, commonPCA, learning_rate, ro, local_epochs, dim, ro_auto):
         self.localPCA   = copy.deepcopy(commonPCA) # local U
         self.localZ     = copy.deepcopy(commonPCA)

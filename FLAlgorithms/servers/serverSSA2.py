@@ -79,7 +79,7 @@ class ADMM_SSA(Server2):
 
             # check = torch.matmul(U.T,U)
 
-            user = UserADMM3(algorithm, device, id, train, self.commonPCAz, learning_rate, ro, local_epochs, dim, ro_auto)
+            user = UserADMM2(algorithm, device, id, train, self.commonPCAz, learning_rate, ro, local_epochs, dim, ro_auto)
             self.users.append(user)
             self.total_train_samples += user.train_samples
         

@@ -188,7 +188,7 @@ class mSSA(object):
                 raise ValueError('The Dataframe must have the same columns as the original Dataframe')
 
         df = self._aggregate_df(df)
-        print(df.shape)
+        # print(df.shape)
 
         obs = (df.values).astype('float')
         # if obs.shape[0] < self.no_ts:

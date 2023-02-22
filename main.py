@@ -23,7 +23,7 @@ from utils.train_utils import get_lstm
 #                                                                                                                           
 # Create an experiment with your api key:
 def main(experiment, dataset, algorithm, batch_size, learning_rate, ro, num_glob_iters,
-         local_epochs, numusers,dim, times, gpu, window, ro_auto):
+         local_epochs, numusers,dim, times, gpu, window, ro_auto, missingVal):
     
     # Get device status: Check GPU or CPU
     device = torch.device("cuda:{}".format(gpu) if torch.cuda.is_available() and gpu != -1 else "cpu")
@@ -38,7 +38,7 @@ def main(experiment, dataset, algorithm, batch_size, learning_rate, ro, num_glob
         cutoff = 0
         server = serverLSTM(experiment, device, dataset,algorithm, model, batch_size, learning_rate, beta, L_k, num_glob_iters, local_epochs, optimizer, numusers, times , cutoff)
     else:
-        server = ADMM_SSA(algorithm, experiment, device, data, learning_rate, ro, num_glob_iters, local_epochs, numusers, dim, times, window, ro_auto, imputationORforecast=0)
+        server = ADMM_SSA(algorithm, experiment, device, data, learning_rate, ro, num_glob_iters, local_epochs, numusers, dim, times, window, ro_auto, missingVal, imputationORforecast=0)
     print("Initilized server")
     server.train()
     print("Train Done")
@@ -109,7 +109,8 @@ if __name__ == "__main__":
         dim = args.dim,
         window = args.window,
         times = args.times,
-        gpu=args.gpu
+        gpu=args.gpu,
+        missingVal=args.missingVal
         )
 
 

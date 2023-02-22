@@ -195,6 +195,22 @@ class ADMM_SSA(Server2):
 
         # Obtain X instead of C
         # return X
+
+    def get_multi_electricity_data(self, house_ids, user_idx, user_num_data):
+        # Define indices
+        start_idx = user_idx*user_num_data
+        end_idx = (user_idx+1)*user_num_data
+        # Get data for each client
+        id = house_ids[start_idx]
+        train = self.get_electricity_data_missing_val(id)
+        print(f"Shape of initial train: {train.shape}")
+        for i in range(start_idx + 1, end_idx):
+            id = house_ids[i]
+            train_i = self.get_electricity_data_missing_val(id) # This line can be substitued for other data
+            # print(f"Shape of initial train i : {train_i.shape}")
+            train = np.concatenate((train, train_i), axis=1)
+            # print(f"Shape of concatenated train: {train.shape}")
+        return train
         
     def train(self):
         # self.selected_users = self.select_users(1000,1)

@@ -38,15 +38,20 @@ class ADMM_SSA(Server2):
                 total_users = int(dataset[7:])
             print("total users: ", total_users)
         self.user_fraction = num_users # Define the percentage of global user
-        self.num_users = total_users
+        # Get number of users for training
+        self.num_users = 10
         self.imputationORforecast = imputationORforecast
 
         # self.store_ids = ['2', '3', '4']
+        # Get total data in the dataset
         self.house_ids = ['MT_{0:03}'.format(i+1) for i in range(total_users)]
-        
+
+        # Get number of data for each user
+        self.user_num_data = int(total_users / self.num_users)
+        print(f"Number of data per user: {self.user_num_data}")
         self.all_train_data = []
 
-        for i in range(total_users):            
+        for i in range(self.num_users):            
             # train = self.generate_synthetic_data()
             # store_id = self.store_ids[i]
             # train = self.get_store_sale_data(store_id)
@@ -57,7 +62,11 @@ class ADMM_SSA(Server2):
             elif dataset[:4] == 'Elec':
                 id = self.house_ids[i]
                 # train = self.get_electricity_data(id)
-                train = self.get_electricity_data_missing_val(id)
+                # train = self.get_electricity_data_missing_val(id)
+                # print(f"Val of i : {i}")
+                print(f"--------------Creating user: {i}--------------")
+                train = self.get_multi_electricity_data(self.house_ids, i, self.user_num_data)
+                print(f"Shape of training data: {train.shape}")
             elif dataset[:7] == 'Traffic':
                 id = self.house_ids[i]
                 train = self.get_traffic_data(id)
@@ -79,7 +88,7 @@ class ADMM_SSA(Server2):
 
             # check = torch.matmul(U.T,U)
 
-            user = UserADMM2(algorithm, device, id, train, self.commonPCAz, learning_rate, ro, local_epochs, dim, ro_auto)
+            user = UserADMM3(algorithm, device, id, train, self.commonPCAz, learning_rate, ro, local_epochs, dim, ro_auto)
             self.users.append(user)
             self.total_train_samples += user.train_samples
         
@@ -193,6 +202,22 @@ class ADMM_SSA(Server2):
         else:
             return X
 
+    def get_multi_electricity_data(self, house_ids, user_idx, user_num_data):
+        # Define indices
+        start_idx = user_idx*user_num_data
+        end_idx = (user_idx+1)*user_num_data
+        # Get data for each client
+        id = house_ids[start_idx]
+        train = self.get_electricity_data_missing_val(id)
+        print(f"Shape of initial train: {train.shape}")
+        for i in range(start_idx + 1, end_idx):
+            id = house_ids[i]
+            train_i = self.get_electricity_data_missing_val(id) # This line can be substitued for other data
+            # print(f"Shape of initial train i : {train_i.shape}")
+            train = np.concatenate((train, train_i), axis=1)
+            # print(f"Shape of concatenated train: {train.shape}")
+        return train
+    
     def get_electricity_data_missing_val(self, mt_id):
         DATA_PATH = "data/electricity_train_missing_20/"
         store_name = f"{mt_id}.csv"
@@ -240,9 +265,9 @@ class ADMM_SSA(Server2):
         # self.selected_users = self.select_users(1000,1)
         self.selected_users = self.users
 
-        print("Selected users: ")
-        for i, user in enumerate(self.selected_users):
-            print("user_id selected for training: ", i)
+        # print("Selected users: ")
+        # for i, user in enumerate(self.selected_users):
+        #     print("user_id selected for training: ", i)
 
         for glob_iter in range(self.num_glob_iters):
             if(self.experiment):
@@ -260,6 +285,7 @@ class ADMM_SSA(Server2):
             # self.users = self.selected_users 
             #NOTE: this is required for the ``fork`` method to work
             for user in self.selected_users:
+                # print("user_id selected for training: ", user.id)
                 user.train(self.local_epochs)
                 # print(f"user_id selected for training: {user.id}")
             # self.users[0].train(self.local_epochs)

@@ -160,10 +160,7 @@ class ADMM_SSA(Server2):
         if self.missingVal:
             DATA_PATH = "data/electricity_train_missing_20/"
         else:
-            return X
-
-    def get_electricity_data_missing_val(self, mt_id):
-        DATA_PATH = "data/electricity_train_missing_20/"
+            DATA_PATH = "data/electricity_train/"
         store_name = f"{mt_id}.csv"
         file_path = DATA_PATH + store_name
         house = pd.read_csv(file_path)

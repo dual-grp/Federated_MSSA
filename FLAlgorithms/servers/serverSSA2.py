@@ -17,7 +17,7 @@ import h5py
 # Implementation for FedAvg Server
 
 class ADMM_SSA(Server2):
-    def __init__(self, algorithm, experiment, device, dataset, learning_rate, ro, num_glob_iters, local_epochs, num_users, dim, time, window, ro_auto, imputationORforecast):
+    def __init__(self, algorithm, experiment, device, dataset, learning_rate, ro, num_glob_iters, local_epochs, num_users, dim, time, window, ro_auto, missingVal, imputationORforecast):
         super().__init__(device, dataset, learning_rate, ro, num_glob_iters, local_epochs, num_users, dim, window, ro_auto, time)
 
         # Initialize data for all  users
@@ -41,6 +41,7 @@ class ADMM_SSA(Server2):
         # Get number of users for training
         self.num_users = 10
         self.imputationORforecast = imputationORforecast
+        self.missingVal = missingVal
 
         # self.store_ids = ['2', '3', '4']
         # Get total data in the dataset
@@ -62,11 +63,7 @@ class ADMM_SSA(Server2):
             elif dataset[:4] == 'Elec':
                 id = self.house_ids[i]
                 # train = self.get_electricity_data(id)
-                # train = self.get_electricity_data_missing_val(id)
-                # print(f"Val of i : {i}")
-                print(f"--------------Creating user: {i}--------------")
-                train = self.get_multi_electricity_data(self.house_ids, i, self.user_num_data)
-                print(f"Shape of training data: {train.shape}")
+                train = self.get_electricity_data_missing_val(id)
             elif dataset[:7] == 'Traffic':
                 id = self.house_ids[i]
                 train = self.get_traffic_data(id)
@@ -134,7 +131,10 @@ class ADMM_SSA(Server2):
         return C
 
     def get_traffic_data(self, mt_id):
-        DATA_PATH = "traffic_train/"
+        if self.missingVal:
+            DATA_PATH = "data/traffic_train_missing_20/"
+        else:
+            DATA_PATH = "data/traffic_train/"
         store_name = f"{mt_id}.csv"
         file_path = DATA_PATH + store_name
         house = pd.read_csv(file_path)
@@ -154,70 +154,14 @@ class ADMM_SSA(Server2):
         X = F[:int(L*M)].reshape([int(L),int(M)], order = 'F')
         # print(X.shape)
         X.astype(float)
-
-        if self.imputationORforecast: 
-            results_folder_path = os.path.join(os.getcwd(), "results/SSA")
-            result_filename = f"Grassmann_ADMM_Electricity_{self.num_users}_L20_d{self.dim}_imputation.npy"
-            result_path = os.path.join(results_folder_path, result_filename)
-            Z = np.load(result_path)
-            Xhat = Z.dot(Z.T.dot(X))
-            Xhat = Xhat[:-1,:]
-            return Xhat
-            
-        else:
-            return X
+        return X
 
     def get_electricity_data(self, mt_id):
-        DATA_PATH = "electricity_train/"
-        store_name = f"{mt_id}.csv"
-        file_path = DATA_PATH + store_name
-        house = pd.read_csv(file_path)
-        # print(file_path)
-        colname = mt_id
-        elec = house[colname].copy()
-        F = elec.to_numpy()
-        T = F.shape[0] 
-        L = self.window # The window length
-        M = int(T*self.num_users/L)
-        if M%self.num_users != 0:
-            M -= M%self.num_users
-        M /= self.num_users
-        # K = N - L + 1  # number of columns in the trajectory matrix
-        # X = np.column_stack([F[i:i+L] for i in range(0,K)])
-        # Obtain Page matrix
-        # X = F[:int(L*M)].reshape([int(L),int(M)], order = 'F')
-        X = F[T%L:].reshape([int(L),int(M)], order = 'F') # comment out first range, use second range instead
-        # print(X.shape)
-        X.astype(float)
-
-        if self.imputationORforecast: 
-            results_folder_path = os.path.join(os.getcwd(), "results/SSA")
-            result_filename = f"Grassmann_ADMM_Electricity_{self.num_users}_L20_d{self.dim}_imputation.npy"
-            result_path = os.path.join(results_folder_path, result_filename)
-            Z = np.load(result_path)
-            Xhat = Z.dot(Z.T.dot(X))
-            Xhat = Xhat[:-1,:]
-            return Xhat
-            
+        if self.missingVal:
+            DATA_PATH = "data/electricity_train_missing_20/"
         else:
             return X
 
-    def get_multi_electricity_data(self, house_ids, user_idx, user_num_data):
-        # Define indices
-        start_idx = user_idx*user_num_data
-        end_idx = (user_idx+1)*user_num_data
-        # Get data for each client
-        id = house_ids[start_idx]
-        train = self.get_electricity_data_missing_val(id)
-        print(f"Shape of initial train: {train.shape}")
-        for i in range(start_idx + 1, end_idx):
-            id = house_ids[i]
-            train_i = self.get_electricity_data_missing_val(id) # This line can be substitued for other data
-            # print(f"Shape of initial train i : {train_i.shape}")
-            train = np.concatenate((train, train_i), axis=1)
-            # print(f"Shape of concatenated train: {train.shape}")
-        return train
-    
     def get_electricity_data_missing_val(self, mt_id):
         DATA_PATH = "data/electricity_train_missing_20/"
         store_name = f"{mt_id}.csv"
@@ -260,6 +204,22 @@ class ADMM_SSA(Server2):
 
         # Obtain X instead of C
         # return X
+
+    def get_multi_electricity_data(self, house_ids, user_idx, user_num_data):
+        # Define indices
+        start_idx = user_idx*user_num_data
+        end_idx = (user_idx+1)*user_num_data
+        # Get data for each client
+        id = house_ids[start_idx]
+        train = self.get_electricity_data_missing_val(id)
+        print(f"Shape of initial train: {train.shape}")
+        for i in range(start_idx + 1, end_idx):
+            id = house_ids[i]
+            train_i = self.get_electricity_data_missing_val(id) # This line can be substitued for other data
+            # print(f"Shape of initial train i : {train_i.shape}")
+            train = np.concatenate((train, train_i), axis=1)
+            # print(f"Shape of concatenated train: {train.shape}")
+        return train
         
     def train(self):
         # self.selected_users = self.select_users(1000,1)

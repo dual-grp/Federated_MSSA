@@ -9,7 +9,7 @@ def args_parser():
     # parser.add_argument('--seed', type=int, default=1, help='random seed (default: 1)')
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", type=str, default="Elec20") # choices=["debug","Traffic20","Elec5","Elec20", "sine"]
+    parser.add_argument("--dataset", type=str, default="Traffic20") # choices=["debug","Traffic20","Elec5","Elec20", "sine"]
     parser.add_argument("--batch_size", type=int, default=0)
     parser.add_argument("--learning_rate", type=float, default = 0.005, help="Local learning rate")
     parser.add_argument("--ro", type=float, default=1.0, help="Regularization term")
@@ -24,6 +24,7 @@ def args_parser():
     parser.add_argument("--times", type=int, default=1, help="running time")
     parser.add_argument("--commet", type=int, default=0, help="log data to commet")
     parser.add_argument("--gpu", type=int, default=0, help="Which GPU to run the experiments")
+    parser.add_argument("--missingVal", type=int, default=1, help="Train with missing values if True")
     args = parser.parse_args()
 
     return args

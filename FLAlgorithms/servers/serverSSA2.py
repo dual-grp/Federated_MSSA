@@ -39,7 +39,7 @@ class ADMM_SSA(Server2):
             print("total users: ", total_users)
         self.user_fraction = num_users # Define the percentage of global user
         # Get number of users for training
-        self.num_users = 10
+        self.num_users = total_users
         self.imputationORforecast = imputationORforecast
         self.missingVal = missingVal
 
@@ -62,8 +62,7 @@ class ADMM_SSA(Server2):
                 train = self.generate_synthetic_data_gaussian(id)
             elif dataset[:4] == 'Elec':
                 id = self.house_ids[i]
-                # train = self.get_electricity_data(id)
-                train = self.get_electricity_data_missing_val(id)
+                train = self.get_electricity_data(id)
             elif dataset[:7] == 'Traffic':
                 id = self.house_ids[i]
                 train = self.get_traffic_data(id)

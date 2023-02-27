@@ -17,19 +17,24 @@ class serverLSTM(Server):
         self.K = 0
         self.subusers = subusers
         total_users = 20 # pre-define for 20 users
+        self.total_users = total_users
         self.cutoff = cutoff
+        self.dataset = dataset
 
         if dataset == "sine":
             x_train, x_test, y_train, y_test = self.create_sine_dataset()
             print("--------------------------------------------------")
         elif dataset == "Imputed_Elec370":
-            train_data, _ = self.get_imputed_data()
+            train_data, _ = self.get_imputed_data(num_user=20, dim=40, missingPercentage=40)
+        elif dataset == "Imputed_Traff20":
+            train_data = self.get_traff_imputed_data(num_user=20, dim=80, missingPercentage=0)
 
         for i in range(total_users):
             if dataset == "sine":
                 id, train , test = self.create_sine_user_data(i, x_train, x_test, y_train, y_test)
-            if dataset == "Imputed_Elec370":
-                id, train = self.create_elec_user_data(i, train_data=train_data)
+
+            if dataset == "Imputed_Elec370" or dataset == "Imputed_Traff20":
+                id, train = self.create_elec_user_data(i, train_data=train_data, window=40)
                 test = train
 
             # print(f"batch_size: {batch_size}")
@@ -40,9 +45,9 @@ class serverLSTM(Server):
         print("Number of users / total users:",subusers, " / " ,total_users)
         print("Finished creating FedAvg LSTM server.")
 
-    def load_train_data(self):
+    def load_train_data(self, num_user, dim, missingPercentage):
         results_path = f"results/imputed_data/"
-        file_name = f"numuser_370_L_80_dim_78_missingPercentage_20.npy"
+        file_name = f"numuser_{num_user}_L_80_dim_{dim}_missingPercentage_{missingPercentage}.npy"
         file_path = os.path.join(results_path, file_name)
         return_file = np.load(file_path)
         return return_file
@@ -54,11 +59,22 @@ class serverLSTM(Server):
         return_file = np.load(file_path)
         return return_file 
 
-    def get_imputed_data(self):
-        train_data = self.load_train_data()
+    def load_traff_train_data(self, num_user, dim, missingPercentage):
+        results_path = f"results/imputed_data/traffic"
+        file_name = f"numuser_{num_user}_L_100_dim_{dim}_missingPercentage_{missingPercentage}.npy"
+        file_path = os.path.join(results_path, file_name)
+        return_file = np.load(file_path)
+        return return_file
+    
+    def get_imputed_data(self, num_user, dim, missingPercentage):
+        train_data = self.load_train_data(num_user, dim, missingPercentage)
         test_data = self.load_test_data()
         return train_data, test_data
 
+    def get_traff_imputed_data(self, num_user, dim, missingPercentage):
+        train_data = self.load_traff_train_data(num_user, dim, missingPercentage)
+        return train_data
+    
     def create_elec_user_data(self, id, train_data, window=40):
         # Create train data
         X =  train_data[id]
@@ -147,4 +163,5 @@ class serverLSTM(Server):
             self.aggregate_parameters()
             
         # self.save_results()
-        self.save_model_lstm()
+        model_name = f"FedLSTM_{self.dataset}_num_user_{self.total_users}_L_100_dim_80_MP_0_W40"
+        self.save_model_lstm(model_name)

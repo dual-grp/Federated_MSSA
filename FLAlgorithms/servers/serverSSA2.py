@@ -131,9 +131,11 @@ class ADMM_SSA(Server2):
 
     def get_traffic_data(self, mt_id):
         if self.missingVal:
-            DATA_PATH = "data/traffic_train_missing_20/"
+            print("Reading data with missing vals...")
+            DATA_PATH = f"data/traffic_train_missing_{self.missingVal}/"
         else:
-            DATA_PATH = "data/traffic_train/"
+            print("Reading data without missing vals...")
+            DATA_PATH = f"data/traffic_train_missing_{self.missingVal}/"
         store_name = f"{mt_id}.csv"
         file_path = DATA_PATH + store_name
         house = pd.read_csv(file_path)
@@ -157,7 +159,7 @@ class ADMM_SSA(Server2):
 
     def get_electricity_data(self, mt_id):
         if self.missingVal:
-            DATA_PATH = "data/electricity_train_missing_20/"
+            DATA_PATH = f"data/electricity_train_num_user_20_missing_{self.missingVal}/"
         else:
             DATA_PATH = "data/electricity_train/"
         store_name = f"{mt_id}.csv"

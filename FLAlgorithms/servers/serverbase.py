@@ -119,11 +119,11 @@ class Server:
             os.makedirs(model_path)
         torch.save(self.model, os.path.join(model_path, "server" + ".pt"))
 
-    def save_model_lstm(self):
+    def save_model_lstm(self, model_name):
         model_path = os.path.join("models", self.dataset)
         if not os.path.exists(model_path):
             os.makedirs(model_path)
-        torch.save(self.model, os.path.join(model_path, "server" + ".pt"))
+        torch.save(self.model, os.path.join(model_path, model_name + ".pt"))
 
     def load_model(self):
         model_path = os.path.join("models", self.dataset, "server" + ".pt")

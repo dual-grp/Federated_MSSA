@@ -198,7 +198,7 @@ class Server2:
         suffix_missingVal = 'missingVal' if self.missingVal else 'fullObs'
 #         result_filename = f"Grassmann_ADMM_{self.dataset}_missingVal_N{self.num_users}_L{self.window}_d{self.dim}_rho{self.str_ro}_{suffix}"
         # Jiayu2: add decorrelated constraint
-        result_filename = f"Grassmann_ADMM_constraint2_{self.dataset}_{suffix_missingVal}_N{self.num_users}_L{self.window}_d{self.dim}_rho{self.str_ro}_{suffix}"
+        result_filename = f"Grassmann_ADMM_constraint2_{self.dataset}_{suffix_missingVal}{self.missingVal}_N{self.num_users}_L{self.window}_d{self.dim}_rho{self.str_ro}_{suffix}"
         result_path = os.path.join(results_folder_path, result_filename)
         np.save(result_path, self.Z)
         # Jiayu: save Ui for each clients

@@ -20,11 +20,13 @@ def args_parser():
     parser.add_argument("--window", type=int, default = 20)
     parser.add_argument("--optimizer", type=str, default="SGD")
     parser.add_argument("--algorithm", type=str, default="FedPG",choices=["FedPG","FedPE", "FedLSTM"])
-    parser.add_argument("--subusers", type = float, default = 1, help="Number of Users per round")
+    parser.add_argument("--num_users", type = int, default = 1, help="Number of Users per round")
     parser.add_argument("--times", type=int, default=1, help="running time")
     parser.add_argument("--commet", type=int, default=0, help="log data to commet")
     parser.add_argument("--gpu", type=int, default=0, help="Which GPU to run the experiments")
     parser.add_argument("--missingVal", type=int, default=1, help="Train with missing values if True")
+    parser.add_argument("--mulTS", type=int, default=0, help="Train with multi-variate time series if True")
+    parser.add_argument("--fac", type=float, default=1, help="Percentage of users are selected in each global round")
     args = parser.parse_args()
 
     return args

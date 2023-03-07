@@ -23,7 +23,7 @@ from utils.train_utils import get_lstm
 #                                                                                                                           
 # Create an experiment with your api key:
 def main(experiment, dataset, algorithm, batch_size, learning_rate, ro, num_glob_iters,
-         local_epochs, numusers,dim, times, gpu, window, ro_auto, missingVal):
+         local_epochs, numusers, fac_users, dim, times, gpu, window, ro_auto, missingVal, mulTS):
     
     # Get device status: Check GPU or CPU
     device = torch.device("cuda:{}".format(gpu) if torch.cuda.is_available() and gpu != -1 else "cpu")
@@ -38,7 +38,7 @@ def main(experiment, dataset, algorithm, batch_size, learning_rate, ro, num_glob
         cutoff = 0
         server = serverLSTM(experiment, device, dataset,algorithm, model, batch_size, learning_rate, beta, L_k, num_glob_iters, local_epochs, optimizer, numusers, times , cutoff)
     else:
-        server = ADMM_SSA(algorithm, experiment, device, data, learning_rate, ro, num_glob_iters, local_epochs, numusers, dim, times, window, ro_auto, missingVal, imputationORforecast=0)
+        server = ADMM_SSA(algorithm, experiment, device, data, learning_rate, ro, num_glob_iters, local_epochs, numusers, fac_users, dim, times, window, ro_auto, missingVal, mulTS, imputationORforecast=0)
     print("Initilized server")
     server.train()
     print("Train Done")
@@ -59,7 +59,7 @@ if __name__ == "__main__":
     print("Learing rate       : {}".format(args.learning_rate))
     print("Average Moving       : {}".format(args.ro))
     print("Auto Average Moving  : {}".format(args.ro_auto))
-    print("Subset of users      : {}".format(args.subusers))
+    print("Number of users      : {}".format(args.num_users))
     print("Number of global rounds       : {}".format(args.num_global_iters))
     print("Number of local rounds       : {}".format(args.local_epochs))
     print("Dataset       : KDD")
@@ -105,12 +105,14 @@ if __name__ == "__main__":
         ro_auto = args.ro_auto,
         num_glob_iters=args.num_global_iters,
         local_epochs=args.local_epochs,
-        numusers = args.subusers,
+        numusers = args.num_users,
+        fac_users = args.fac,
         dim = args.dim,
         window = args.window,
         times = args.times,
         gpu=args.gpu,
-        missingVal=args.missingVal
+        missingVal=args.missingVal,
+        mulTS = args.mulTS
         )
 
 

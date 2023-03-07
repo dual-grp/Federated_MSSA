@@ -17,7 +17,7 @@ import h5py
 # Implementation for FedAvg Server
 
 class ADMM_SSA(Server2):
-    def __init__(self, algorithm, experiment, device, dataset, learning_rate, ro, num_glob_iters, local_epochs, num_users, dim, time, window, ro_auto, missingVal, imputationORforecast):
+    def __init__(self, algorithm, experiment, device, dataset, learning_rate, ro, num_glob_iters, local_epochs, num_users, fac_users, dim, time, window, ro_auto, missingVal, mulTS, imputationORforecast):
         super().__init__(device, dataset, learning_rate, ro, num_glob_iters, local_epochs, num_users, dim, window, ro_auto, time)
 
         # Initialize data for all  users
@@ -25,6 +25,8 @@ class ADMM_SSA(Server2):
         self.K = 0
         self.dim = dim
         self.experiment = experiment
+        self.mulTS = mulTS # Create multi-variate time series for a client
+        self.fac_users = fac_users
         # np.random.seed(1993)
         if dataset == 'debug': self.debug = True
         else: self.debug = False
@@ -37,9 +39,12 @@ class ADMM_SSA(Server2):
             elif dataset[:7] == 'Traffic':
                 total_users = int(dataset[7:])
             print("total users: ", total_users)
-        self.user_fraction = num_users # Define the percentage of global user
+        self.user_fraction = self.fac_users # Define the percentage of selected users in every global iteration
         # Get number of users for training
-        self.num_users = total_users
+        if self.mulTS == 0:
+            self.num_users = total_users
+        else:
+            self.num_users = num_users
         self.imputationORforecast = imputationORforecast
         self.missingVal = missingVal
 
@@ -51,7 +56,7 @@ class ADMM_SSA(Server2):
         self.user_num_data = int(total_users / self.num_users)
         print(f"Number of data per user: {self.user_num_data}")
         self.all_train_data = []
-
+        
         for i in range(self.num_users):            
             # train = self.generate_synthetic_data()
             # store_id = self.store_ids[i]
@@ -62,7 +67,21 @@ class ADMM_SSA(Server2):
                 train = self.generate_synthetic_data_gaussian(id)
             elif dataset[:4] == 'Elec':
                 id = self.house_ids[i]
-                train = self.get_electricity_data(id)
+                if self.mulTS == 0:
+                    train = self.get_electricity_data(id)
+                else:
+                    train = self.get_multi_electricity_data(house_ids=self.house_ids, user_idx=i, user_num_data=self.user_num_data)
+                    print(train.shape)
+                    directory = os.getcwd()
+                    folder_path = os.path.join(directory, "data/data_mulTS/electricity_train_mulTS/electricity_train_nusers_10_missing_0")
+                    file_name = f"client_{i}"
+                    data_file = os.path.join(folder_path, file_name)
+                    isExist = os.path.exists(data_file)
+                    if not isExist:
+                        np.save(data_file, train)
+                        print(f"Saved training data for client {i}")
+                    else:
+                        print(f"Data for client {i} is created before")
             elif dataset[:7] == 'Traffic':
                 id = self.house_ids[i]
                 train = self.get_traffic_data(id)
@@ -94,7 +113,7 @@ class ADMM_SSA(Server2):
         self.all_train_data_array = np.hstack(self.all_train_data)
         self.all_train_data = torch.tensor(self.all_train_data_array, dtype=torch.float64)
             
-        print("Number of users / total users:",num_users, " / " ,total_users)
+        print("Number of selected users / total users:", self.fac_users*self.num_users, " / " , self.num_users)
         print("Finished creating FedAvg server.")
 
     def generate_synthetic_data(self):
@@ -180,7 +199,7 @@ class ADMM_SSA(Server2):
         # Obtain Page matrix
         # X = F[:int(L*M)].reshape([int(L),int(M)], order = 'F')
         X = F[T%L:].reshape([int(L),int(M)], order = 'F') # comment out first range, use second range instead
-        # print(X.shape)
+        print(X.shape)
         X.astype(float)
 
         if self.imputationORforecast: 
@@ -202,18 +221,37 @@ class ADMM_SSA(Server2):
 
         # Obtain X instead of C
         # return X
-
+    
+    def get_single_data(self, mt_id):
+        DATA_PATH = "data/electricity_train/"
+        store_name = f"{mt_id}.csv"
+        file_path = DATA_PATH + store_name
+        house = pd.read_csv(file_path)
+        colname = mt_id
+        elec = house[colname].copy()
+        F = elec.to_numpy()
+        T = F.shape[0] 
+        L = self.window # The window length
+        M = int(T*self.num_users/L)
+        if M%self.num_users != 0:
+            M -= M%self.num_users
+        M /= self.num_users
+        X = F[T%L:].reshape([int(L),int(M)], order = 'F') # comment out first range, use second range instead
+        # print(X.shape)
+        X.astype(float)
+        return X
+    
     def get_multi_electricity_data(self, house_ids, user_idx, user_num_data):
         # Define indices
         start_idx = user_idx*user_num_data
         end_idx = (user_idx+1)*user_num_data
         # Get data for each client
         id = house_ids[start_idx]
-        train = self.get_electricity_data_missing_val(id)
+        train = self.get_single_data(id)
         print(f"Shape of initial train: {train.shape}")
         for i in range(start_idx + 1, end_idx):
             id = house_ids[i]
-            train_i = self.get_electricity_data_missing_val(id) # This line can be substitued for other data
+            train_i = self.get_single_data(id) # This line can be substitued for other data
             # print(f"Shape of initial train i : {train_i.shape}")
             train = np.concatenate((train, train_i), axis=1)
             # print(f"Shape of concatenated train: {train.shape}")
@@ -254,8 +292,11 @@ class ADMM_SSA(Server2):
 
         loss_all_data = self.evaluate_all_data()
         self.Z = self.commonPCAz.detach().numpy().copy()
-
-        self.save_results()
+        if self.mulTS == 0:
+            self.save_results()
+        else:
+            self.save_results_mulTS()
+            pass
         # self.save_model()
         print("Completed training!!!")
 

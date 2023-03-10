@@ -23,7 +23,7 @@ from utils.train_utils import get_lstm
 #                                                                                                                           
 # Create an experiment with your api key:
 def main(experiment, dataset, algorithm, batch_size, learning_rate, ro, num_glob_iters,
-         local_epochs, numusers, fac_users, dim, times, gpu, window, ro_auto, missingVal, mulTS):
+         local_epochs, numusers, fac_users, dim, times, gpu, window, ro_auto, missingVal, mulTS, datatype):
     
     # Get device status: Check GPU or CPU
     device = torch.device("cuda:{}".format(gpu) if torch.cuda.is_available() and gpu != -1 else "cpu")
@@ -36,7 +36,7 @@ def main(experiment, dataset, algorithm, batch_size, learning_rate, ro, num_glob
         L_k = 0
         optimizer = "SGD"
         cutoff = 0
-        server = serverLSTM(experiment, device, dataset,algorithm, model, batch_size, learning_rate, beta, L_k, num_glob_iters, local_epochs, optimizer, numusers, times , cutoff)
+        server = serverLSTM(experiment, device, dataset,algorithm, model, batch_size, learning_rate, beta, L_k, num_glob_iters, local_epochs, optimizer, fac_users, times , cutoff, mulTS, missingVal, numusers, datatype)
     else:
         server = ADMM_SSA(algorithm, experiment, device, data, learning_rate, ro, num_glob_iters, local_epochs, numusers, fac_users, dim, times, window, ro_auto, missingVal, mulTS, imputationORforecast=0)
     print("Initilized server")
@@ -112,7 +112,8 @@ if __name__ == "__main__":
         times = args.times,
         gpu=args.gpu,
         missingVal=args.missingVal,
-        mulTS = args.mulTS
+        mulTS = args.mulTS,
+        datatype= args.datatype
         )
 
 

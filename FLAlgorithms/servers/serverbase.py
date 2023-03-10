@@ -125,6 +125,13 @@ class Server:
             os.makedirs(model_path)
         torch.save(self.model, os.path.join(model_path, model_name + ".pt"))
 
+    def save_model_lstm_mulTS(self, model_name):
+        folder_path = "models/mulTS"
+        model_path = os.path.join(folder_path, self.dataset)
+        if not os.path.exists(model_path):
+            os.makedirs(model_path)
+        torch.save(self.model, os.path.join(model_path, model_name + ".pt"))
+
     def load_model(self):
         model_path = os.path.join("models", self.dataset, "server" + ".pt")
         assert (os.path.exists(model_path))

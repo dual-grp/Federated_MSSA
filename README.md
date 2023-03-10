@@ -33,6 +33,15 @@ python3 main.py --dataset Imputed_Traff20 --algorithm FedLSTM --batch_size 64 --
 <pre></code>
 python3 main.py --algorithm FedPG --learning_rate 0.005 --num_global_iters 50 --dim 80 --local_epochs 30 --ro 1 --dataset Elec370 --window 80 --ro_auto 1 --missingVal 0 --mulTS 1 --fac 1 --num_users 10
 <code></pre>
+
+## Running command for FedLSTM with no-missing data in multivariate-time series on client
+<pre></code>
+python3 main.py --dataset Imputed_Elec370 --algorithm FedLSTM --batch_size 64 --learning_rate 0.001 --fac 0.2 --num_global_iters 100 --local_epochs 2 --num_users 10 --mulTS 1 --missingVal 0 --datatype hankel
+
+python3 main.py --dataset Imputed_Elec370 --algorithm FedLSTM --batch_size 64 --learning_rate 0.001 --fac 0.3 --num_global_iters 20 --local_epochs 1 --num_users 10 --mulTS 1 --missingVal 0 --datatype hankel
+
+python3 main.py --dataset Imputed_Elec370 --algorithm FedLSTM --batch_size 64 --learning_rate 0.001 --fac 0.2 --num_global_iters 20 --local_epochs 1 --num_users 10 --mulTS 1 --missingVal 0 --datatype hankel
+<code></pre>
 ## Dataset:
 Electricity dataset
 Traffic dataset

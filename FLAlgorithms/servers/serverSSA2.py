@@ -73,7 +73,7 @@ class ADMM_SSA(Server2):
                     train = self.get_multi_electricity_data(house_ids=self.house_ids, user_idx=i, user_num_data=self.user_num_data)
                     print(train.shape)
                     directory = os.getcwd()
-                    folder_path = os.path.join(directory, "data/data_mulTS/electricity_train_mulTS/electricity_train_nusers_10_missing_0")
+                    folder_path = os.path.join(directory, f"data/data_mulTS/electricity_train_mulTS/electricity_train_nusers_{self.num_users}_missing_{self.missingVal}")
                     file_name = f"client_{i}"
                     data_file = os.path.join(folder_path, file_name)
                     isExist = os.path.exists(data_file)
@@ -223,7 +223,11 @@ class ADMM_SSA(Server2):
         # return X
     
     def get_single_data(self, mt_id):
-        DATA_PATH = "data/electricity_train/"
+        if self.missingVal == 0:
+            DATA_PATH = "data/electricity_train/"
+        else:
+            DATA_PATH = f"data/electricity370_train_missing_{self.missingVal}/"
+
         store_name = f"{mt_id}.csv"
         file_path = DATA_PATH + store_name
         house = pd.read_csv(file_path)

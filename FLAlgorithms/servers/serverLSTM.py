@@ -244,7 +244,7 @@ class serverLSTM(Server):
             self.aggregate_parameters()
             
         # self.save_results()
-        model_name = f"FedLSTM_{self.dataset}_num_user_{self.total_users}_L_80_dim_70_MP_0_W79"
+        model_name = f"FedLSTM_{self.dataset}_num_user_{self.total_users}_L_80_dim_40_MP_{self.missingVal}_W40"
         if self.mulTS == 0:
             self.save_model_lstm(model_name)
         else:

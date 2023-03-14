@@ -19,7 +19,7 @@ def args_parser():
     parser.add_argument("--dim", type=int, default = 3)
     parser.add_argument("--window", type=int, default = 20)
     parser.add_argument("--optimizer", type=str, default="SGD")
-    parser.add_argument("--algorithm", type=str, default="FedPG",choices=["FedPG","FedPE", "FedLSTM"])
+    parser.add_argument("--algorithm", type=str, default="FedPG",choices=["FedPG","FedPE", "FedLSTM", "FedLR"])
     parser.add_argument("--num_users", type = int, default = 1, help="Number of Users in the network")
     parser.add_argument("--times", type=int, default=1, help="running time")
     parser.add_argument("--commet", type=int, default=0, help="log data to commet")

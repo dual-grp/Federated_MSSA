@@ -221,3 +221,16 @@ class LSTM_nn(nn.Module):
         output = output[:,-1,:]
         output = self.fc1(torch.relu(output))
         return output
+
+class LR_nn(nn.Module):
+    def __init__(self):
+        super(LR_nn, self).__init__()
+        self.hidden1 = nn.Linear(79, 512)
+        self.linear = nn.Linear(512, 1)
+        
+    def forward(self,x):
+        x = self.hidden1(x)
+        x = torch.tanh(x)
+        x = self.linear(x)
+        output = torch.tanh(x)
+        return output

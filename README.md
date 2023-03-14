@@ -53,6 +53,13 @@ python3 main.py --dataset Imputed_Elec370 --algorithm FedLSTM --batch_size 64 --
 python3 main.py --dataset Imputed_Elec370 --algorithm FedLSTM --batch_size 64 --learning_rate 0.001 --fac 0.2 --num_global_iters 20 --local_epochs 1 --num_users 10 --mulTS 1 --missingVal 20 --datatype hankel
 
 python3 main.py --dataset Imputed_Elec370 --algorithm FedLSTM --batch_size 64 --learning_rate 0.001 --fac 0.1 --num_global_iters 20 --local_epochs 1 --num_users 370 --mulTS 1 --missingVal 20 --datatype hankel
+
+python3 main.py --dataset Imputed_Elec370 --algorithm FedLSTM --batch_size 64 --learning_rate 0.001 --fac 0.1 --num_global_iters 20 --local_epochs 1 --num_users 37 --mulTS 1 --missingVal 20 --datatype hankel
+<code></pre>
+
+## Running command for FedLSTM with no-missing data in multivariate-time series on client
+<pre></code>
+python3 main.py --dataset Imputed_Elec370 --algorithm FedLR --batch_size 64 --learning_rate 0.001 --fac 0.1 --num_global_iters 20 --local_epochs 1 --num_users 37 --mulTS 1 --missingVal 20 --datatype hankel
 <code></pre>
 ## Dataset:
 Electricity dataset

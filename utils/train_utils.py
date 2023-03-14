@@ -36,3 +36,7 @@ def get_model(args):
 def get_lstm():
     model = LSTM_nn()
     return model
+
+def get_lr():
+    model = LR_nn()
+    return model

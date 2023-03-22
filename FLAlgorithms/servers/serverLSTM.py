@@ -22,7 +22,7 @@ class serverLSTM(Server):
         self.mulTS = mulTS
         self.missingVal = missingVal
         self.datatype = datatype
-
+        self.window = 40
         if dataset == "sine":
             x_train, x_test, y_train, y_test = self.create_sine_dataset()
             print("--------------------------------------------------")
@@ -42,7 +42,7 @@ class serverLSTM(Server):
 
             if dataset == "Imputed_Elec370" or dataset == "Imputed_Traff20":
                 if self.mulTS == 0:
-                    id, train = self.create_elec_user_data(i, train_data=train_data, window=40)
+                    id, train = self.create_elec_user_data(i, train_data=train_data, window=self.window)
                     test = train
                 else:
                     if self.datatype == "page":
@@ -162,7 +162,7 @@ class serverLSTM(Server):
         y_train = []
         for n in range(num_data):
             flattened_data_i = data_flatten[n]
-            x_train_i, y_train_i = self.windowing_data(flattened_data_i)
+            x_train_i, y_train_i = self.windowing_data(flattened_data_i, window=self.window)
             x_train.extend(x_train_i)
             y_train.extend(y_train_i)
         train_x = np.array(x_train)
@@ -244,7 +244,7 @@ class serverLSTM(Server):
             self.aggregate_parameters()
             
         # self.save_results()
-        model_name = f"FedLSTM_{self.dataset}_num_user_{self.total_users}_L_80_dim_40_MP_{self.missingVal}_W40_{self.datatype}"
+        model_name = f"FedLSTM_{self.dataset}_num_user_{self.total_users}_globalEpochs{self.num_glob_iters}_localEpochs{self.local_epochs}_fac{self.subusers}_L_80_dim_40_MP_{self.missingVal}_W{self.window}_{self.datatype}"
         if self.mulTS == 0:
             self.save_model_lstm(model_name)
         else:

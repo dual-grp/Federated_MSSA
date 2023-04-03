@@ -73,6 +73,7 @@ class ADMM_SSA(Server2):
                     train = self.get_multi_electricity_data(house_ids=self.house_ids, user_idx=i, user_num_data=self.user_num_data)
                     print(train.shape)
                     directory = os.getcwd()
+                    # Store data to make imputation in later step
                     folder_path = os.path.join(directory, f"data/data_mulTS/electricity_train_mulTS/electricity_train_nusers_{self.num_users}_missing_{self.missingVal}")
                     file_name = f"client_{i}"
                     data_file = os.path.join(folder_path, file_name)
@@ -82,10 +83,26 @@ class ADMM_SSA(Server2):
                         print(f"Saved training data for client {i}")
                     else:
                         print(f"Data for client {i} is created before")
+
             elif dataset[:7] == 'Traffic':
                 id = self.house_ids[i]
-                train = self.get_traffic_data(id)
-
+                if self.mulTS == 0:
+                    train = self.get_traffic_data(id)
+                else:
+                    train = self.get_multi_traffic_data(house_ids=self.house_ids, user_idx=i, user_num_data=self.user_num_data)
+                    print(train.shape)
+                    directory = os.getcwd()
+                    # Store data to make imputation in later step
+                    folder_path = os.path.join(directory, f"data/data_mulTS/traffic_train_mulTS/traffic_train_nusers_{self.num_users}_missing_{self.missingVal}")
+                    file_name = f"client_{i}"
+                    data_file = os.path.join(folder_path, file_name)
+                    isExist = os.path.exists(data_file)
+                    if not isExist:
+                        np.save(data_file, train)
+                        print(f"Saved training data for client {i}")
+                    else:
+                        print(f"Data for client {i} is created before")
+                        
             self.all_train_data.append(train)
 
             train = torch.tensor(train, dtype=torch.float64)
@@ -244,6 +261,25 @@ class ADMM_SSA(Server2):
         # print(X.shape)
         X.astype(float)
         return X
+
+    def get_single_traffic_data(self, mt_id):
+        DATA_PATH = f"data/traffic860_train_missing_{self.missingVal}/"
+        store_name = f"{mt_id}.csv"
+        file_path = DATA_PATH + store_name
+        house = pd.read_csv(file_path)
+        colname = mt_id
+        elec = house[colname].copy()
+        F = elec.to_numpy()
+        T = F.shape[0] 
+        L = self.window # The window length
+        M = int(T*self.num_users/L)
+        if M%self.num_users != 0:
+            M -= M%self.num_users
+        M /= self.num_users
+        X = F[T%L:].reshape([int(L),int(M)], order = 'F') # comment out first range, use second range instead
+        # print(X.shape)
+        X.astype(float)
+        return X
     
     def get_multi_electricity_data(self, house_ids, user_idx, user_num_data):
         # Define indices
@@ -260,7 +296,23 @@ class ADMM_SSA(Server2):
             train = np.concatenate((train, train_i), axis=1)
             # print(f"Shape of concatenated train: {train.shape}")
         return train
-        
+    
+    def get_multi_traffic_data(self, house_ids, user_idx, user_num_data):
+        # Define indices
+        start_idx = user_idx*user_num_data
+        end_idx = (user_idx+1)*user_num_data
+        # Get data for each client
+        id = house_ids[start_idx]
+        train = self.get_single_traffic_data(id)
+        print(f"Shape of initial train: {train.shape}")
+        for i in range(start_idx + 1, end_idx):
+            id = house_ids[i]
+            train_i = self.get_single_traffic_data(id) # This line can be substitued for other data
+            # print(f"Shape of initial train i : {train_i.shape}")
+            train = np.concatenate((train, train_i), axis=1)
+            # print(f"Shape of concatenated train: {train.shape}")
+        return train 
+    
     def train(self):
         # self.selected_users = self.select_users(1000,1)
         self.selected_users = self.users

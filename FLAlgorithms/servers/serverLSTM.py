@@ -27,20 +27,33 @@ class serverLSTM(Server):
             x_train, x_test, y_train, y_test = self.create_sine_dataset()
             print("--------------------------------------------------")
         elif dataset == "Imputed_Elec370":
-            if mulTS == 0:
+            self.numTS = self.dataset[-3:] # Get the last 3 numbers for number of time series data
+            self.M_ts = 324 # Size of page matrix for Elec dataset
+            if self.mulTS == 0:
                 train_data, _ = self.get_imputed_data(num_user=20, dim=40, missingPercentage=40)
             else:
                 folder_path = f"results/imputed_data/mulTS/electricity_nusers_{self.total_users}_missing_{self.missingVal}"
 
+        elif dataset == "Imputed_Traff860":
+            self.numTS = self.dataset[-3:] # Get the last 3 numbers for number of time series data
+            self.M_ts = 173 # Size of page matrix for Traffic dataset
+            if self.mulTS != 0:
+                folder_path = f"results/imputed_data/mulTS_traffic/traffic_nusers_{self.total_users}_missing_{self.missingVal}"
 
         elif dataset == "Imputed_Traff20":
-            train_data = self.get_traff_imputed_data(num_user=20, dim=80, missingPercentage=0)
+            if self.mulTS == 0:
+                train_data = self.get_traff_imputed_data(num_user=20, dim=80, missingPercentage=0)
+
+        
+        self.numTS = int(self.numTS)
+        if self.mulTS != 0:
+            print(f"Number of data per user: {int(self.numTS / self.total_users)}")
 
         for i in range(self.total_users):
             if dataset == "sine":
                 id, train , test = self.create_sine_user_data(i, x_train, x_test, y_train, y_test)
 
-            if dataset == "Imputed_Elec370" or dataset == "Imputed_Traff20":
+            if dataset == "Imputed_Elec370" or dataset == "Imputed_Traff20" or dataset == "Imputed_Traff860":
                 if self.mulTS == 0:
                     id, train = self.create_elec_user_data(i, train_data=train_data, window=self.window)
                     test = train
@@ -48,14 +61,15 @@ class serverLSTM(Server):
                     if self.datatype == "page":
                         id, train = self.get_mulTS_imputed_data(folder_path, i)
                     else:
-                        id, train = self.create_mulTS_hankel(folder_path, i)
+                        id, train = self.create_mulTS_hankel(folder_path, i, num_data=self.numTS, M_ts=self.M_ts)
                     test = train
 
             # print(f"batch_size: {batch_size}")
             user = UserLSTM(device, id, train, test, model, batch_size, learning_rate,beta,L_k, local_epochs, optimizer)
             print(user.id)
             self.users.append(user)
-            
+
+
         print("Number of selected users / total users:", int(self.subusers * self.total_users), " / " , self.total_users)
         print("Finished creating FedAvg LSTM server.")
 
@@ -140,7 +154,7 @@ class serverLSTM(Server):
         train_data = [(x, y) for x, y in zip(X_train, Y_train)]
         return i, train_data
 
-    def create_mulTS_hankel(self, folder_path, i):
+    def create_mulTS_hankel(self, folder_path, i, num_data, M_ts):
         # Get data for client with index i
         file_name = f"all_data_client_{i}.npy"
         file_path = os.path.join(folder_path, file_name)
@@ -148,8 +162,8 @@ class serverLSTM(Server):
 
         print(data_client_i.shape)
         # Flatten data for client
-        num_data = 37
-        M_ts = 324
+        num_data = num_data
+        M_ts = M_ts
         data_flatten = []
         for n in range(num_data):
             data_i = data_client_i[:, n*M_ts:(n+1)*M_ts]

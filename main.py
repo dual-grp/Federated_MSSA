@@ -70,8 +70,7 @@ if __name__ == "__main__":
     print("Number of users      : {}".format(args.num_users))
     print("Number of global rounds       : {}".format(args.num_global_iters))
     print("Number of local rounds       : {}".format(args.local_epochs))
-    print("Dataset       : KDD")
-    # print("Dataset       : {}".format(args.dataset))
+    print("Dataset       : {}".format(args.dataset))
     print("=" * 80)
 
     if(args.commet):
